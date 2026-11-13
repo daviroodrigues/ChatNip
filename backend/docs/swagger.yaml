@@ -1,0 +1,2206 @@
+basePath: /
+definitions:
+  apierrors.AppError:
+    properties:
+      error:
+        type: string
+    type: object
+  auth.APIKey:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      masked_key:
+        type: string
+      name:
+        type: string
+      revoked_at:
+        type: string
+    type: object
+  auth.CreateKeyRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  auth.CreateKeyResponse:
+    properties:
+      api_key:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      masked_key:
+        type: string
+      name:
+        type: string
+    type: object
+  domain.ContactInfo:
+    properties:
+      full_name:
+        type: string
+      jid:
+        type: string
+      push_name:
+        type: string
+    type: object
+  domain.Group:
+    properties:
+      jid:
+        type: string
+      name:
+        type: string
+      owner_jid:
+        type: string
+      participant_count:
+        type: integer
+    type: object
+  domain.GroupInviteInfo:
+    properties:
+      created_at:
+        type: string
+      group_name:
+        type: string
+      jid:
+        type: string
+      owner_jid:
+        type: string
+      participant_count:
+        type: integer
+    type: object
+  domain.GroupMetadata:
+    properties:
+      created_at:
+        type: string
+      is_announce:
+        type: boolean
+      is_ephemeral:
+        type: boolean
+      is_locked:
+        type: boolean
+      jid:
+        type: string
+      name:
+        type: string
+      owner_jid:
+        type: string
+      participant_count:
+        type: integer
+      participants:
+        items:
+          $ref: '#/definitions/domain.GroupParticipant'
+        type: array
+      topic:
+        type: string
+      topic_set_by:
+        type: string
+    type: object
+  domain.GroupParticipant:
+    properties:
+      display_name:
+        type: string
+      is_admin:
+        type: boolean
+      is_super_admin:
+        type: boolean
+      jid:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  domain.IsOnWhatsAppResult:
+    properties:
+      is_in:
+        type: boolean
+      jid:
+        type: string
+      phone:
+        type: string
+    type: object
+  domain.NewsletterInfo:
+    properties:
+      description:
+        type: string
+      invite_code:
+        type: string
+      jid:
+        type: string
+      name:
+        type: string
+      subscribers:
+        type: integer
+    type: object
+  domain.ProxyValidationResult:
+    properties:
+      error:
+        type: string
+      exit_ip:
+        type: string
+      latency_ms:
+        type: integer
+      valid:
+        type: boolean
+    type: object
+  domain.SessionStatus:
+    properties:
+      connected:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: string
+      jid:
+        type: string
+      logged_in:
+        type: boolean
+      proxy_url:
+        type: string
+      qr:
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  domain.UserInfoResult:
+    properties:
+      jid:
+        type: string
+      picture_url:
+        type: string
+      status:
+        type: string
+      verified_name:
+        type: string
+    type: object
+  handler.BlocklistRequest:
+    properties:
+      block:
+        type: boolean
+      jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.CheckNumbersRequest:
+    properties:
+      phones:
+        items:
+          type: string
+        type: array
+      session_id:
+        type: string
+    type: object
+  handler.CreateChannelRequest:
+    properties:
+      avatar_base64:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.CreateGroupRequest:
+    properties:
+      name:
+        type: string
+      participants:
+        items:
+          type: string
+        type: array
+      session_id:
+        type: string
+    type: object
+  handler.CreateGroupResponse:
+    properties:
+      group_id:
+        type: string
+      msg:
+        type: string
+    type: object
+  handler.EditMessageRequest:
+    properties:
+      correlation_id:
+        type: string
+      is_group:
+        type: boolean
+      is_priority:
+        type: boolean
+      jid:
+        type: string
+      message_id:
+        type: string
+      new_message:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.FollowChannelRequest:
+    properties:
+      channel_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.JoinGroupInviteMessageRequest:
+    properties:
+      code:
+        type: string
+      expiration:
+        type: integer
+      group_jid:
+        type: string
+      inviter_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.JoinGroupLinkRequest:
+    properties:
+      code:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.LeaveGroupRequest:
+    properties:
+      group_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.ListGroupsResponse:
+    properties:
+      groups:
+        items:
+          $ref: '#/definitions/domain.Group'
+        type: array
+      session_id:
+        type: string
+    type: object
+  handler.LoginPairCodeRequest:
+    properties:
+      phone:
+        type: string
+      proxy_url:
+        type: string
+      session_id:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  handler.LoginPairCodeResponse:
+    properties:
+      pair_code:
+        type: string
+      status:
+        type: string
+    type: object
+  handler.LoginRequest:
+    properties:
+      proxy_url:
+        type: string
+      session_id:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  handler.LoginResponse:
+    properties:
+      msg:
+        type: string
+      status:
+        type: string
+    type: object
+  handler.LogoutRequest:
+    properties:
+      session_id:
+        type: string
+    type: object
+  handler.MediaType:
+    enum:
+    - image
+    - video
+    - audio
+    - document
+    - sticker
+    type: string
+    x-enum-varnames:
+    - MediaTypeImage
+    - MediaTypeVideo
+    - MediaTypeAudio
+    - MediaTypeDocument
+    - MediaTypeSticker
+  handler.ReactionMessageRequest:
+    properties:
+      correlation_id:
+        type: string
+      is_group:
+        type: boolean
+      is_priority:
+        type: boolean
+      jid:
+        type: string
+      message_id:
+        type: string
+      reaction:
+        description: Emoji ou vazio para remover
+        type: string
+      sender_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.ReadMessageRequest:
+    properties:
+      chat_jid:
+        type: string
+      correlation_id:
+        type: string
+      is_group:
+        type: boolean
+      message_id:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.RevokeMessageRequest:
+    properties:
+      correlation_id:
+        type: string
+      is_group:
+        type: boolean
+      is_priority:
+        type: boolean
+      jid:
+        type: string
+      message_id:
+        type: string
+      sender_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SendMessageRequest:
+    properties:
+      correlation_id:
+        type: string
+      file_name:
+        type: string
+      is_gif:
+        type: boolean
+      is_group:
+        type: boolean
+      is_priority:
+        type: boolean
+      is_ptt:
+        type: boolean
+      jid:
+        type: string
+      media_type:
+        $ref: '#/definitions/handler.MediaType'
+      media_url:
+        type: string
+      message:
+        type: string
+      quoted_msg_id:
+        type: string
+      quoted_participant:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SendStatusRequest:
+    properties:
+      correlation_id:
+        type: string
+      media_type:
+        $ref: '#/definitions/handler.MediaType'
+      media_url:
+        type: string
+      message:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SetChatArchiveRequest:
+    properties:
+      archive:
+        type: boolean
+      chat_jid:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SetChatMuteRequest:
+    properties:
+      chat_jid:
+        type: string
+      duration_seconds:
+        type: integer
+      mute:
+        type: boolean
+      session_id:
+        type: string
+    type: object
+  handler.SetChatPinRequest:
+    properties:
+      chat_jid:
+        type: string
+      pin:
+        type: boolean
+      session_id:
+        type: string
+    type: object
+  handler.SetGroupInfoSettingRequest:
+    properties:
+      group_jid:
+        type: string
+      only_admins:
+        type: boolean
+      session_id:
+        type: string
+    type: object
+  handler.SetGroupMessageSettingRequest:
+    properties:
+      group_jid:
+        type: string
+      only_admins:
+        type: boolean
+      session_id:
+        type: string
+    type: object
+  handler.SetGroupNameRequest:
+    properties:
+      group_jid:
+        type: string
+      name:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SetGroupPhotoRequest:
+    properties:
+      group_jid:
+        type: string
+      photo_base64:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.SetGroupTopicRequest:
+    properties:
+      group_jid:
+        type: string
+      session_id:
+        type: string
+      topic:
+        type: string
+    type: object
+  handler.UpdateGroupParticipantsRequest:
+    properties:
+      action:
+        description: '"add", "remove", "promote", "demote"'
+        type: string
+      group_jid:
+        type: string
+      participants:
+        items:
+          type: string
+        type: array
+      session_id:
+        type: string
+    type: object
+  handler.UpdateProxyRequest:
+    properties:
+      proxy_url:
+        type: string
+      session_id:
+        type: string
+    type: object
+  handler.ValidateProxyRequest:
+    properties:
+      proxy_url:
+        type: string
+    type: object
+info:
+  contact:
+    name: ChatNip Engineering
+    url: https://github.com/daviroodrigues/ChatNip
+  description: Enterprise-Grade Multi-Tenant WhatsApp Gateway & Event Dispatcher.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: ChatNip WhatsApp Gateway API
+  version: "1.0"
+paths:
+  /api/v1/auth/keys:
+    get:
+      description: Retorna as chaves de API cadastradas com chave mascarada
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/auth.APIKey'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - InternalKeyAuth: []
+      summary: Listar API Keys
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: Gera uma chave de API para um cliente com hash Argon2id (exibida
+        em texto claro apenas nesta resposta)
+      parameters:
+      - description: Dados da nova chave
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.CreateKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.CreateKeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - InternalKeyAuth: []
+      summary: Criar nova API Key
+      tags:
+      - Auth
+  /api/v1/auth/keys/{id}:
+    delete:
+      description: Revoga uma chave de API existente pelo ID
+      parameters:
+      - description: ID da chave
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - InternalKeyAuth: []
+      summary: Revogar API Key
+      tags:
+      - Auth
+  /api/v1/blocklist:
+    get:
+      description: Retorna a lista de JIDs que foram bloqueados pela conta do WhatsApp.
+      parameters:
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Listar Contatos Bloqueados
+      tags:
+      - WhatsApp - Contatos
+    post:
+      consumes:
+      - application/json
+      description: Adiciona ou remove um número de telefone da lista de bloqueio do
+        WhatsApp.
+      parameters:
+      - description: Dados do Bloqueio
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.BlocklistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Bloquear / Desbloquear Contato
+      tags:
+      - WhatsApp - Contatos
+  /api/v1/channels:
+    get:
+      description: Retorna os canais do WhatsApp que a sessão segue.
+      parameters:
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.NewsletterInfo'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Listar Canais Inscritos
+      tags:
+      - WhatsApp - Canais
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo canal público de transmissão do WhatsApp com nome,
+        descrição e avatar opcional.
+      parameters:
+      - description: Dados do Canal
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.NewsletterInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Criar Canal (Newsletter)
+      tags:
+      - WhatsApp - Canais
+  /api/v1/channels/{jid}/follow:
+    post:
+      consumes:
+      - application/json
+      description: Inscreve a sessão para seguir as atualizações de um canal oficial
+        do WhatsApp.
+      parameters:
+      - description: JID do Canal
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Dados do Canal
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.FollowChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Seguir Canal
+      tags:
+      - WhatsApp - Canais
+  /api/v1/channels/{jid}/unfollow:
+    post:
+      consumes:
+      - application/json
+      description: Cancela a inscrição da sessão em um canal do WhatsApp.
+      parameters:
+      - description: JID do Canal
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Dados do Canal
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.FollowChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Deixar de Seguir Canal
+      tags:
+      - WhatsApp - Canais
+  /api/v1/chats/{jid}:
+    delete:
+      description: Limpa o histórico de mensagens da conversa na conta do WhatsApp.
+      parameters:
+      - description: JID do Chat
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Limpar Conversa
+      tags:
+      - WhatsApp - Conversas
+  /api/v1/chats/{jid}/archive:
+    put:
+      consumes:
+      - application/json
+      description: Move o chat para a pasta de arquivados ou restaura para a lista
+        principal.
+      parameters:
+      - description: JID do Chat
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Estado de Arquivamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetChatArchiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Arquivar / Desarquivar Conversa
+      tags:
+      - WhatsApp - Conversas
+  /api/v1/chats/{jid}/mute:
+    put:
+      consumes:
+      - application/json
+      description: Silencia ou reativa notificações de um chat com duração programada
+        (em segundos).
+      parameters:
+      - description: JID do Chat
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Configuração de Silenciamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetChatMuteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Silenciar / Reativar Conversa
+      tags:
+      - WhatsApp - Conversas
+  /api/v1/chats/{jid}/pin:
+    put:
+      consumes:
+      - application/json
+      description: Fixa ou desafixa um chat no topo da lista do WhatsApp.
+      parameters:
+      - description: JID do Chat
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Estado de Fixação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetChatPinRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Fixar / Desafixar Conversa
+      tags:
+      - WhatsApp - Conversas
+  /api/v1/contacts:
+    get:
+      description: Retorna a lista de contatos em cache sincronizados na base SQLite
+        local do dispositivo.
+      parameters:
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ContactInfo'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Listar Contatos Salvos
+      tags:
+      - WhatsApp - Contatos
+  /api/v1/contacts/{jid}/info:
+    get:
+      description: Busca sob demanda os dados de perfil (avatar, status/recado e nome
+        verificado) de um contato.
+      parameters:
+      - description: JID do Contato
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.UserInfoResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Obter Informações de Contato
+      tags:
+      - WhatsApp - Contatos
+  /api/v1/contacts/check:
+    post:
+      consumes:
+      - application/json
+      description: Verifica em lote se uma lista de números de telefone possui contas
+        ativas no WhatsApp.
+      parameters:
+      - description: Lista de Telefones com DDI
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CheckNumbersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.IsOnWhatsAppResult'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Validar Números no WhatsApp
+      tags:
+      - WhatsApp - Contatos
+  /api/v1/groups:
+    get:
+      description: Retorna todos os grupos que a sessão participa.
+      parameters:
+      - description: Session ID
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ListGroupsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Listar Grupos
+      tags:
+      - WhatsApp - Grupos
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo grupo com os participantes informados.
+      parameters:
+      - description: Dados do Grupo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.CreateGroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Criar Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}:
+    get:
+      description: Recupera metadados completos do grupo, incluindo assunto, descrição,
+        criador e lista de participantes.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.GroupMetadata'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Obter Informações do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/invite:
+    get:
+      description: Gera ou recupera o link de convite oficial do grupo (chat.whatsapp.com/...).
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Obter Link de Convite do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/invite/revoke:
+    post:
+      description: Invalida o link de convite atual do grupo e gera imediatamente
+        um novo.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Revogar Link de Convite do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/leave:
+    post:
+      consumes:
+      - application/json
+      description: Desconecta a sessão e sai definitivamente de um grupo do WhatsApp.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handler.LeaveGroupRequest'
+      - description: ID da Sessão (alternativo via query)
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Sair do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/name:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o nome (assunto) de um grupo do WhatsApp.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Novo Nome do Grupo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetGroupNameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Alterar Nome do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/participants:
+    post:
+      consumes:
+      - application/json
+      description: 'Adiciona, remove, promove a administrador ou rebaixa participantes
+        do grupo (ações: add, remove, promote, demote).'
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Dados dos Participantes e Ação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateGroupParticipantsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Gerenciar Participantes do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/photo:
+    delete:
+      description: Exclui o avatar atual do grupo.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Remover Foto do Grupo
+      tags:
+      - WhatsApp - Grupos
+    put:
+      consumes:
+      - application/json
+      description: Define uma nova imagem de perfil do grupo utilizando Base64 (formato
+        JPEG).
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Foto em Base64
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetGroupPhotoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Definir Foto do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/settings/info:
+    put:
+      consumes:
+      - application/json
+      description: Define se apenas administradores podem alterar o nome, ícone e
+        descrição do grupo.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Configuração de Bloqueio
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetGroupInfoSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Configurar Edição de Dados do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/{jid}/topic:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o tópico (descrição) de um grupo do WhatsApp.
+      parameters:
+      - description: JID do Grupo
+        in: path
+        name: jid
+        required: true
+        type: string
+      - description: Nova Descrição do Grupo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetGroupTopicRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Alterar Descrição do Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/invites/{code}:
+    get:
+      description: Retorna metadados básicos de um grupo através do seu código de
+        convite sem entrar no grupo.
+      parameters:
+      - description: Código do Convite
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.GroupInviteInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Inspecionar Grupo por Código de Convite
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/join:
+    post:
+      consumes:
+      - application/json
+      description: Entra em um grupo do WhatsApp utilizando o link ou código de convite.
+      parameters:
+      - description: Código ou Link do Convite
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.JoinGroupLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Entrar em Grupo via Link ou Código
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/join-invite:
+    post:
+      consumes:
+      - application/json
+      description: Entra em um grupo utilizando uma mensagem de convite privada enviada
+        por um contato.
+      parameters:
+      - description: Dados do Convite Privado
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.JoinGroupInviteMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Entrar em Grupo via Mensagem de Convite
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/groups/settings/messages:
+    put:
+      consumes:
+      - application/json
+      description: Define se todos os participantes ou apenas administradores podem
+        enviar mensagens no grupo.
+      parameters:
+      - description: Configuração
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SetGroupMessageSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Configurar Quem Pode Enviar Mensagens no Grupo
+      tags:
+      - WhatsApp - Grupos
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Cria e inicia uma nova sessão de WhatsApp em segundo plano com
+        o proxy de egressão obrigatório, retornando imediatamente o status PENDING_QR.
+        O QR Code atualizado fica disponível em GET /api/v1/status.
+      parameters:
+      - description: Dados de Inicialização da Sessão
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Iniciar Sessão via QR Code
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/login/pair-code:
+    post:
+      consumes:
+      - application/json
+      description: Gera um código de 8 dígitos para vincular o WhatsApp no celular
+        sem usar QR Code.
+      parameters:
+      - description: Dados de Pareamento com Telefone
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginPairCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginPairCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Iniciar Sessão via Código de Pareamento
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/logout:
+    post:
+      consumes:
+      - application/json
+      description: Encerra e desvincula a sessão ativa do WhatsApp.
+      parameters:
+      - description: ID da Sessão
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LogoutRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Session ended
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Desconectar Sessão (Logout)
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/messages/edit:
+    post:
+      consumes:
+      - application/json
+      description: Edita o texto de uma mensagem enviada anteriormente.
+      parameters:
+      - description: Dados da Edição
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.EditMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Editar Mensagem
+      tags:
+      - WhatsApp - Mensagens
+  /api/v1/messages/reaction:
+    post:
+      consumes:
+      - application/json
+      description: Envia uma reação com emoji a uma mensagem (ou remove com emoji
+        vazio).
+      parameters:
+      - description: Dados da Reação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ReactionMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Reagir a Mensagem
+      tags:
+      - WhatsApp - Mensagens
+  /api/v1/messages/read:
+    post:
+      consumes:
+      - application/json
+      description: Enfileira a confirmação de leitura no RabbitMQ com execução humanizada
+        pelo motor.
+      parameters:
+      - description: Dados da Mensagem
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ReadMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Marcar Mensagem como Lida
+      tags:
+      - WhatsApp - Mensagens
+  /api/v1/messages/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revoga (deleta para todos) uma mensagem enviada.
+      parameters:
+      - description: Dados da Revogação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RevokeMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Revogar Mensagem
+      tags:
+      - WhatsApp - Mensagens
+  /api/v1/proxy:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o endereço de proxy de uma sessão existente e reconecta
+        o cliente se necessário.
+      parameters:
+      - description: Dados de Atualização
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateProxyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Atualizar Proxy da Sessão
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/proxy/validate:
+    post:
+      consumes:
+      - application/json
+      description: Testa a conectividade, autenticação e IP de saída de uma URL de
+        proxy (HTTP/HTTPS/SOCKS5) antes de criar ou atualizar uma sessão.
+      parameters:
+      - description: URL do Proxy
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ValidateProxyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProxyValidationResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Validar Proxy de Egressão
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/send:
+    post:
+      consumes:
+      - application/json
+      description: Envia mensagens de texto ou mídias via fila RabbitMQ com simulação
+        humanizada (HSEM v3) ou pista rápida.
+      parameters:
+      - description: Dados do Envio (Texto ou Mídia)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Status de fila (queued)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Enviar Mensagem (Texto ou Mídia)
+      tags:
+      - WhatsApp - Mensagens
+  /api/v1/sessions:
+    get:
+      description: Retorna todas as sessões ou filtra por tenant.
+      parameters:
+      - description: ID do Tenant
+        in: query
+        name: tenant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.SessionStatus'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Listar Sessões
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/status:
+    get:
+      description: Retorna o estado de conectividade, login e o último QR Code disponível
+        (quando pendente de pareamento) de uma sessão do WhatsApp.
+      parameters:
+      - description: ID da Sessão
+        in: query
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SessionStatus'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Obter Status da Sessão
+      tags:
+      - WhatsApp - Sessões
+  /api/v1/status/send:
+    post:
+      consumes:
+      - application/json
+      description: Publica uma atualização de texto ou mídia no Status do WhatsApp
+        via fila e despacho humanizado.
+      parameters:
+      - description: Dados do Status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SendStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apierrors.AppError'
+      security:
+      - ApiKeyAuth: []
+      - InternalKeyAuth: []
+      summary: Publicar Status / Stories
+      tags:
+      - WhatsApp - Status
+  /health:
+    get:
+      description: Retorna status 200 se a aplicação e o banco de dados estiverem
+        respondendo
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verifica a saúde do serviço
+      tags:
+      - Health
+securityDefinitions:
+  ApiKeyAuth:
+    description: Chave de API de cliente para envio e operações de mensagens (formato
+      cn_live_*)
+    in: header
+    name: X-API-Key
+    type: apiKey
+  InternalKeyAuth:
+    description: Chave interna administrativa mestre para gerenciamento de credenciais
+      e instâncias
+    in: header
+    name: X-Internal-Key
+    type: apiKey
+swagger: "2.0"

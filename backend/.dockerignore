@@ -1,0 +1,7 @@
+volumes/
+keys/
+bin/
+.env
+.env.*
+*.md
+.git/

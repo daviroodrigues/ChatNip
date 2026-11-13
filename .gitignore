@@ -1,0 +1,10 @@
+.env
+.env.dev
+.env.homo
+.env.prod
+
+/volumes/
+bin/
+/keys/*
+!/keys/.gitkeep
+
