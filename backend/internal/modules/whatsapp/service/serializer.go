@@ -3,7 +3,6 @@ package service
 import (
 	"chatnip/internal/modules/whatsapp/domain"
 	"context"
-	"errors"
 	"sync"
 	"time"
 )
@@ -259,15 +258,6 @@ func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
 				s.service.logger.Error().Err(err).
 					Str("session_id", job.Payload.SessionID).
 					Msg("Failed to execute burst step")
-
-				isPermanent := errors.Is(err, domain.ErrSessionNotFound) ||
-					errors.Is(err, domain.ErrProxyRequired)
-
-				if !isPermanent {
-					_ = job.Acknowledger.Nack(true)
-				} else {
-					_ = job.Acknowledger.Nack(false)
-				}
 			}
 		}
 

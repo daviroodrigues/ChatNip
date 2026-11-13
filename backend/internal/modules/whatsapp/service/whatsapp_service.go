@@ -198,7 +198,67 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		plan.Steps = optimizedSteps
 	}
 
-	return s.hsemExecutor.Execute(ctx, client, plan, payload, mediaData)
+	msgID, err := s.hsemExecutor.Execute(ctx, client, plan, payload, mediaData)
+	if err != nil && !payload.IsGroup && isNoLIDError(err) {
+		if resolvedJID, ok := s.resolveFallbackJID(ctx, client, payload.RemoteJID); ok {
+			payload.RemoteJID = resolvedJID
+			retryPlan := hsemDomain.FingerprintPlan{
+				TotalDuration: 100 * time.Millisecond,
+				Steps: []hsemDomain.ActionStep{
+					{
+						Type:      hsemDomain.StepAction,
+						Timestamp: 50 * time.Millisecond,
+						Metadata:  "send_message",
+					},
+				},
+			}
+			return s.hsemExecutor.Execute(ctx, client, retryPlan, payload, mediaData)
+		}
+	}
+	return msgID, err
+}
+
+func isNoLIDError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "recipient is not on WhatsApp") ||
+		strings.Contains(msg, "no LID found")
+}
+
+func (s *WhatsAppService) resolveFallbackJID(ctx context.Context, client domain.WhatsAppClient, remoteJID string) (string, bool) {
+	phone := strings.Split(remoteJID, "@")[0]
+	if phone == "" {
+		return "", false
+	}
+
+	candidates := []string{phone}
+	if strings.HasPrefix(phone, "55") {
+		if len(phone) == 13 && phone[4] == '9' {
+			candidates = append(candidates, phone[:4]+phone[5:])
+		} else if len(phone) == 12 {
+			candidates = append(candidates, phone[:4]+"9"+phone[4:])
+		}
+	}
+
+	results, err := client.IsOnWhatsApp(ctx, candidates)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("jid", remoteJID).Msg("Fallback IsOnWhatsApp lookup failed")
+		return "", false
+	}
+
+	for _, r := range results {
+		if r.IsIn && r.JID != "" && r.JID != remoteJID {
+			s.logger.Info().
+				Str("original_jid", remoteJID).
+				Str("resolved_jid", r.JID).
+				Msg("Resolved fallback JID via IsOnWhatsApp")
+			return r.JID, true
+		}
+	}
+
+	return "", false
 }
 
 func (s *WhatsAppService) QueueMessage(ctx context.Context, payload domain.SendMessagePayload) error {

@@ -9,6 +9,7 @@ import (
 	"errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
+	"strings"
 	"sync"
 	"time"
 )
@@ -113,6 +114,21 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 				continue
 			}
 
+			if isPermanentMessageError(err) {
+				w.logger.Error().
+					Err(err).
+					Str("session_id", payload.SessionID).
+					Str("jid", payload.RemoteJID).
+					Msg("Permanent failure processing message. Moving to DLQ/Discarding")
+
+				if nackErr := d.Nack(false, false); nackErr != nil {
+					w.logger.Error().Err(nackErr).Msg("Failed to nack on permanent error")
+				}
+
+				w.publishMessageFailed(ctx, payload, "PERMANENT_ERROR", err.Error())
+				continue
+			}
+
 			retryCount := 0
 			if d.Headers != nil {
 				if val, ok := d.Headers["x-retry-count"]; ok {
@@ -137,23 +153,7 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 					w.logger.Error().Err(nackErr).Msg("Failed to nack on MaxRetries")
 				}
 
-				if payload.CorrelationID != "" {
-					failEvt := domain.MessageFailedEvent{
-						EventType:     "message.failed",
-						CorrelationID: payload.CorrelationID,
-						Timestamp:     time.Now(),
-						Data: domain.MessageFailedData{
-							SessionID:    payload.SessionID,
-							JID:          payload.RemoteJID,
-							ErrorCode:    "MAX_RETRIES_EXCEEDED",
-							ErrorMessage: err.Error(),
-						},
-					}
-
-					if pubErr := w.adapter.Publish(ctx, "whatsapp.message.failed", failEvt); pubErr != nil {
-						w.logger.Error().Err(pubErr).Msg("Failed to publish message.failed event")
-					}
-				}
+				w.publishMessageFailed(ctx, payload, "MAX_RETRIES_EXCEEDED", err.Error())
 
 			} else {
 				w.logger.Info().
@@ -316,5 +316,35 @@ func (w *WhatsAppWorker) processGroupMessages(ctx context.Context, msgs <-chan a
 				}
 			}
 		}
+	}
+}
+
+func isPermanentMessageError(err error) bool {
+	if errors.Is(err, domain.ErrProxyRequired) {
+		return true
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "recipient is not on WhatsApp") ||
+		strings.Contains(msg, "no LID found")
+}
+
+func (w *WhatsAppWorker) publishMessageFailed(ctx context.Context, payload domain.SendMessagePayload, errorCode, errorMsg string) {
+	if payload.CorrelationID == "" {
+		return
+	}
+	failEvt := domain.MessageFailedEvent{
+		EventType:     "message.failed",
+		CorrelationID: payload.CorrelationID,
+		Timestamp:     time.Now(),
+		Data: domain.MessageFailedData{
+			SessionID:    payload.SessionID,
+			JID:          payload.RemoteJID,
+			ErrorCode:    errorCode,
+			ErrorMessage: errorMsg,
+		},
+	}
+
+	if pubErr := w.adapter.Publish(ctx, "whatsapp.message.failed", failEvt); pubErr != nil {
+		w.logger.Error().Err(pubErr).Msg("Failed to publish message.failed event")
 	}
 }
