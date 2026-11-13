@@ -52,6 +52,7 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 
 		// Contacts & App State
 		r.Post("/contacts/check", apierrors.APIHandler(h.handleCheckNumbers).ServeHTTP)
+		r.Post("/contacts/resolve", apierrors.APIHandler(h.handleResolveContact).ServeHTTP)
 		r.Get("/contacts", apierrors.APIHandler(h.handleListContacts).ServeHTTP)
 		r.Get("/contacts/{jid}/info", apierrors.APIHandler(h.handleGetUserInfo).ServeHTTP)
 		r.Put("/chats/{jid}/pin", apierrors.APIHandler(h.handleSetChatPin).ServeHTTP)
@@ -64,6 +65,7 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 		// Channels / Newsletters
 		r.Post("/channels", apierrors.APIHandler(h.handleCreateChannel).ServeHTTP)
 		r.Get("/channels", apierrors.APIHandler(h.handleListChannels).ServeHTTP)
+		r.Post("/channels/{jid}/send", apierrors.APIHandler(h.handleSendChannelMessage).ServeHTTP)
 		r.Post("/channels/{jid}/follow", apierrors.APIHandler(h.handleFollowChannel).ServeHTTP)
 		r.Post("/channels/{jid}/unfollow", apierrors.APIHandler(h.handleUnfollowChannel).ServeHTTP)
 	})

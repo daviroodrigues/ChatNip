@@ -1,0 +1,27 @@
+basePath: /
+info:
+  contact:
+    name: ChatNip Engineering
+    url: https://github.com/daviroodrigues/ChatNip
+  description: Enterprise-Grade Multi-Tenant WhatsApp Gateway & Event Dispatcher.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: ChatNip WhatsApp Gateway API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  ApiKeyAuth:
+    description: Chave de API de cliente para envio e operações de mensagens (formato
+      cn_live_*)
+    in: header
+    name: X-API-Key
+    type: apiKey
+  InternalKeyAuth:
+    description: Chave interna administrativa mestre para gerenciamento de credenciais
+      e instâncias
+    in: header
+    name: X-Internal-Key
+    type: apiKey
+swagger: "2.0"

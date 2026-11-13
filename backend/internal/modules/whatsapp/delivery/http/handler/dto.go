@@ -47,6 +47,7 @@ type SendMessageRequest struct {
 	CorrelationID     string    `json:"correlation_id"`
 	SessionID         string    `json:"session_id"`
 	RemoteJID         string    `json:"jid"`
+	TargetType        string    `json:"target_type,omitempty"` // "contact", "group", "status", "newsletter"
 	Message           string    `json:"message"`
 	MediaURL          string    `json:"media_url,omitempty"`
 	MediaType         MediaType `json:"media_type,omitempty"`
@@ -186,6 +187,11 @@ type CheckNumbersRequest struct {
 	Phones    []string `json:"phones"`
 }
 
+type ResolveContactRequest struct {
+	SessionID string `json:"session_id"`
+	Phone     string `json:"phone"`
+}
+
 type SetChatPinRequest struct {
 	SessionID string `json:"session_id"`
 	ChatJID   string `json:"chat_jid"`
@@ -229,4 +235,15 @@ type CreateChannelRequest struct {
 type FollowChannelRequest struct {
 	SessionID  string `json:"session_id"`
 	ChannelJID string `json:"channel_jid"`
+}
+
+type SendChannelMessageRequest struct {
+	CorrelationID string    `json:"correlation_id,omitempty"`
+	SessionID     string    `json:"session_id"`
+	Message       string    `json:"message,omitempty"`
+	MediaURL      string    `json:"media_url,omitempty"`
+	MediaType     MediaType `json:"media_type,omitempty"`
+	FileName      string    `json:"file_name,omitempty"`
+	IsGIF         bool      `json:"is_gif,omitempty"`
+	IsPriority    bool      `json:"is_priority,omitempty"`
 }

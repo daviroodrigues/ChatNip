@@ -48,18 +48,24 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 			}
 
 		case "composing":
-			if err := client.SendPresence(ctx, payload.RemoteJID, "composing"); err != nil {
-				e.logger.Warn().Err(err).Msg("Failed to send composing presence")
+			if !payload.IsBroadcastOrChannelTarget() {
+				if err := client.SendPresence(ctx, payload.RemoteJID, "composing"); err != nil {
+					e.logger.Warn().Err(err).Msg("Failed to send composing presence")
+				}
 			}
 
 		case "recording":
-			if err := client.SendPresence(ctx, payload.RemoteJID, "recording"); err != nil {
-				e.logger.Warn().Err(err).Msg("Failed to send recording presence")
+			if !payload.IsBroadcastOrChannelTarget() {
+				if err := client.SendPresence(ctx, payload.RemoteJID, "recording"); err != nil {
+					e.logger.Warn().Err(err).Msg("Failed to send recording presence")
+				}
 			}
 
 		case "paused":
-			if err := client.SendPresence(ctx, payload.RemoteJID, "paused"); err != nil {
-				e.logger.Warn().Err(err).Msg("Failed to send paused presence")
+			if !payload.IsBroadcastOrChannelTarget() {
+				if err := client.SendPresence(ctx, payload.RemoteJID, "paused"); err != nil {
+					e.logger.Warn().Err(err).Msg("Failed to send paused presence")
+				}
 			}
 
 		case "send_message":
@@ -150,7 +156,9 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 				}
 			}
 
-			_ = client.SendPresence(ctx, payload.RemoteJID, "paused")
+			if !payload.IsBroadcastOrChannelTarget() {
+				_ = client.SendPresence(ctx, payload.RemoteJID, "paused")
+			}
 		}
 	}
 

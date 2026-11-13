@@ -169,6 +169,12 @@ func (h *WhatsAppHandler) handleSend(w http.ResponseWriter, r *http.Request) err
 		return apierrors.NewBadRequest("invalid request body")
 	}
 
+	if req.TargetType == "status" && req.RemoteJID == "" {
+		req.RemoteJID = "status@broadcast"
+	} else if (req.TargetType == "newsletter" || req.TargetType == "channel") && req.RemoteJID != "" && !strings.Contains(req.RemoteJID, "@") {
+		req.RemoteJID += "@newsletter"
+	}
+
 	if req.RemoteJID == "" {
 		return apierrors.NewBadRequest("jid is required")
 	}
@@ -181,6 +187,7 @@ func (h *WhatsAppHandler) handleSend(w http.ResponseWriter, r *http.Request) err
 		CorrelationID:     req.CorrelationID,
 		SessionID:         req.SessionID,
 		RemoteJID:         req.RemoteJID,
+		TargetType:        req.TargetType,
 		Text:              req.Message,
 		IsGroup:           req.IsGroup,
 		IsPriority:        req.IsPriority,
@@ -649,6 +656,18 @@ func (h *WhatsAppHandler) handleSendStatus(w http.ResponseWriter, r *http.Reques
 		return apierrors.NewBadRequest("session_id is required")
 	}
 
+	if req.Message == "" && req.MediaURL == "" {
+		return apierrors.NewBadRequest("message or media_url is required")
+	}
+
+	if req.MediaURL != "" && req.MediaType != MediaTypeImage && req.MediaType != MediaTypeVideo {
+		return apierrors.NewBadRequest("status media_type must be 'image' or 'video'")
+	}
+
+	if status, _ := h.service.GetStatus(req.SessionID); !status.LoggedIn {
+		return apierrors.NewBadRequest("session not connected")
+	}
+
 	correlationID := req.CorrelationID
 	if correlationID == "" {
 		correlationID = uuid.New().String()
@@ -658,6 +677,7 @@ func (h *WhatsAppHandler) handleSendStatus(w http.ResponseWriter, r *http.Reques
 		CorrelationID: correlationID,
 		SessionID:     req.SessionID,
 		RemoteJID:     "status@broadcast",
+		TargetType:    "status",
 		Text:          req.Message,
 		MediaURL:      req.MediaURL,
 		MediaType:     string(req.MediaType),
@@ -1100,6 +1120,37 @@ func (h *WhatsAppHandler) handleCheckNumbers(w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+// @Summary      Resolver JID Canônico de Contato
+// @Description  Recebe um telefone normalizado, monta variações com e sem o 9º dígito (quando aplicável), consulta o WhatsApp em lote único e retorna o JID exato ou informa que não existe.
+// @Tags         WhatsApp - Contatos
+// @Accept       json
+// @Produce      json
+// @Param        request body ResolveContactRequest true "Sessão e Telefone Normalizado"
+// @Success      200 {object} domain.ResolveContactResult
+// @Failure      400 {object} apierrors.AppError
+// @Failure      500 {object} apierrors.AppError
+// @Security     ApiKeyAuth
+// @Security     InternalKeyAuth
+// @Router       /api/v1/contacts/resolve [post]
+func (h *WhatsAppHandler) handleResolveContact(w http.ResponseWriter, r *http.Request) error {
+	var req ResolveContactRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.NewBadRequest("invalid request body")
+	}
+	if req.SessionID == "" || req.Phone == "" {
+		return apierrors.NewBadRequest("session_id and phone are required")
+	}
+	result, err := h.service.ResolveContact(r.Context(), req.SessionID, req.Phone)
+	if err != nil {
+		if err.Error() == "invalid phone number" || err.Error() == "session not connected" {
+			return apierrors.NewBadRequest(err.Error())
+		}
+		return apierrors.NewInternalServerError(err.Error())
+	}
+	httpPlatform.JSON(w, http.StatusOK, result)
+	return nil
+}
+
 // @Summary      Listar Contatos Salvos
 // @Description  Retorna a lista de contatos em cache sincronizados na base SQLite local do dispositivo.
 // @Tags         WhatsApp - Contatos
@@ -1450,5 +1501,71 @@ func (h *WhatsAppHandler) handleUnfollowChannel(w http.ResponseWriter, r *http.R
 		return apierrors.NewInternalServerError(err.Error())
 	}
 	httpPlatform.JSON(w, http.StatusOK, map[string]string{"status": "unfollowed"})
+	return nil
+}
+
+// @Summary      Publicar Mensagem em Canal (Newsletter)
+// @Description  Enfileira uma mensagem de texto ou mídia para envio em um Canal (Newsletter) do WhatsApp.
+// @Tags         WhatsApp - Canais
+// @Accept       json
+// @Produce      json
+// @Param        jid path string true "JID do Canal (ex: 123456789@newsletter)"
+// @Param        request body SendChannelMessageRequest true "Dados da Publicação"
+// @Success      202 {object} map[string]string
+// @Failure      400 {object} apierrors.AppError
+// @Failure      500 {object} apierrors.AppError
+// @Security     ApiKeyAuth
+// @Security     InternalKeyAuth
+// @Router       /api/v1/channels/{jid}/send [post]
+func (h *WhatsAppHandler) handleSendChannelMessage(w http.ResponseWriter, r *http.Request) error {
+	channelJID := chi.URLParam(r, "jid")
+	var req SendChannelMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return apierrors.NewBadRequest("invalid request body")
+	}
+
+	if req.SessionID == "" || channelJID == "" {
+		return apierrors.NewBadRequest("session_id and channel jid are required")
+	}
+	if req.Message == "" && req.MediaURL == "" {
+		return apierrors.NewBadRequest("message or media_url is required")
+	}
+
+	if !strings.Contains(channelJID, "@") {
+		channelJID += "@newsletter"
+	}
+
+	if status, _ := h.service.GetStatus(req.SessionID); !status.LoggedIn {
+		return apierrors.NewBadRequest("session not connected")
+	}
+
+	correlationID := req.CorrelationID
+	if correlationID == "" {
+		correlationID = uuid.New().String()
+	}
+
+	payload := domain.SendMessagePayload{
+		CorrelationID: correlationID,
+		SessionID:     req.SessionID,
+		RemoteJID:     channelJID,
+		TargetType:    "newsletter",
+		Text:          req.Message,
+		MediaURL:      req.MediaURL,
+		MediaType:     string(req.MediaType),
+		FileName:      req.FileName,
+		IsGIF:         req.IsGIF,
+		IsPriority:    req.IsPriority,
+	}
+
+	if err := h.service.QueueMessage(r.Context(), payload); err != nil {
+		h.logger.Error().Err(err).Str("session_id", req.SessionID).Str("channel_jid", channelJID).Msg("Failed to queue channel message")
+		return apierrors.NewInternalServerError("Failed to queue channel message")
+	}
+
+	httpPlatform.JSON(w, http.StatusAccepted, map[string]string{
+		"status":      "queued",
+		"target":      channelJID,
+		"target_type": "newsletter",
+	})
 	return nil
 }

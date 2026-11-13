@@ -93,6 +93,21 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 			continue
 		}
 
+		normalizeTargetJID(&payload)
+
+		if payload.RemoteJID == "" {
+			w.logger.Error().
+				Str("session_id", payload.SessionID).
+				Str("correlation_id", payload.CorrelationID).
+				Msg("Message rejected: Missing resolved JID")
+
+			if nackErr := d.Nack(false, false); nackErr != nil {
+				w.logger.Error().Err(nackErr).Msg("Failed to nack missing JID")
+			}
+			w.publishMessageFailed(ctx, payload, "MISSING_JID", "jid is required")
+			continue
+		}
+
 		ackWrapper := &RabbitMQAcknowledger{Delivery: d}
 		err := w.svc.ProcessBackgroundMessage(ctx, payload, ackWrapper)
 
@@ -114,18 +129,19 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 				continue
 			}
 
-			if isPermanentMessageError(err) {
+			if errCode, permanent := permanentErrorCode(err); permanent {
 				w.logger.Error().
 					Err(err).
 					Str("session_id", payload.SessionID).
 					Str("jid", payload.RemoteJID).
+					Str("error_code", errCode).
 					Msg("Permanent failure processing message. Moving to DLQ/Discarding")
 
 				if nackErr := d.Nack(false, false); nackErr != nil {
 					w.logger.Error().Err(nackErr).Msg("Failed to nack on permanent error")
 				}
 
-				w.publishMessageFailed(ctx, payload, "PERMANENT_ERROR", err.Error())
+				w.publishMessageFailed(ctx, payload, errCode, err.Error())
 				continue
 			}
 
@@ -319,13 +335,29 @@ func (w *WhatsAppWorker) processGroupMessages(ctx context.Context, msgs <-chan a
 	}
 }
 
-func isPermanentMessageError(err error) bool {
+func normalizeTargetJID(payload *domain.SendMessagePayload) {
+	switch payload.TargetType {
+	case "status":
+		if payload.RemoteJID == "" {
+			payload.RemoteJID = "status@broadcast"
+		}
+	case "newsletter", "channel":
+		if payload.RemoteJID != "" && !strings.Contains(payload.RemoteJID, "@") {
+			payload.RemoteJID += "@newsletter"
+		}
+	}
+}
+
+func permanentErrorCode(err error) (string, bool) {
 	if errors.Is(err, domain.ErrProxyRequired) {
-		return true
+		return "PERMANENT_ERROR", true
 	}
 	msg := err.Error()
-	return strings.Contains(msg, "recipient is not on WhatsApp") ||
-		strings.Contains(msg, "no LID found")
+	if strings.Contains(msg, "recipient is not on WhatsApp") ||
+		strings.Contains(msg, "no LID found") {
+		return "RECIPIENT_NOT_ON_WHATSAPP", true
+	}
+	return "", false
 }
 
 func (w *WhatsAppWorker) publishMessageFailed(ctx context.Context, payload domain.SendMessagePayload, errorCode, errorMsg string) {

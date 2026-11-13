@@ -94,6 +94,13 @@ type IsOnWhatsAppResult struct {
 	IsIn  bool   `json:"is_in"`
 }
 
+type ResolveContactResult struct {
+	Exists bool   `json:"exists"`
+	JID    string `json:"jid,omitempty"`
+	Phone  string `json:"phone,omitempty"`
+	Query  string `json:"query,omitempty"`
+}
+
 type UserInfoResult struct {
 	JID          string `json:"jid"`
 	Status       string `json:"status,omitempty"`

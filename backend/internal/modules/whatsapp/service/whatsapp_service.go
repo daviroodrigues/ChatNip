@@ -171,7 +171,7 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		}
 	}
 
-	if payload.Action == "reaction" || payload.Action == "revoke" || payload.Action == "read" || payload.Action == "mark_read" {
+	if payload.Action == "reaction" || payload.Action == "revoke" || payload.Action == "read" || payload.Action == "mark_read" || payload.IsBroadcastOrChannelTarget() {
 		quickPlan := hsemDomain.FingerprintPlan{
 			TotalDuration: 300 * time.Millisecond,
 			Steps: []hsemDomain.ActionStep{
@@ -198,67 +198,7 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		plan.Steps = optimizedSteps
 	}
 
-	msgID, err := s.hsemExecutor.Execute(ctx, client, plan, payload, mediaData)
-	if err != nil && !payload.IsGroup && isNoLIDError(err) {
-		if resolvedJID, ok := s.resolveFallbackJID(ctx, client, payload.RemoteJID); ok {
-			payload.RemoteJID = resolvedJID
-			retryPlan := hsemDomain.FingerprintPlan{
-				TotalDuration: 100 * time.Millisecond,
-				Steps: []hsemDomain.ActionStep{
-					{
-						Type:      hsemDomain.StepAction,
-						Timestamp: 50 * time.Millisecond,
-						Metadata:  "send_message",
-					},
-				},
-			}
-			return s.hsemExecutor.Execute(ctx, client, retryPlan, payload, mediaData)
-		}
-	}
-	return msgID, err
-}
-
-func isNoLIDError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	return strings.Contains(msg, "recipient is not on WhatsApp") ||
-		strings.Contains(msg, "no LID found")
-}
-
-func (s *WhatsAppService) resolveFallbackJID(ctx context.Context, client domain.WhatsAppClient, remoteJID string) (string, bool) {
-	phone := strings.Split(remoteJID, "@")[0]
-	if phone == "" {
-		return "", false
-	}
-
-	candidates := []string{phone}
-	if strings.HasPrefix(phone, "55") {
-		if len(phone) == 13 && phone[4] == '9' {
-			candidates = append(candidates, phone[:4]+phone[5:])
-		} else if len(phone) == 12 {
-			candidates = append(candidates, phone[:4]+"9"+phone[4:])
-		}
-	}
-
-	results, err := client.IsOnWhatsApp(ctx, candidates)
-	if err != nil {
-		s.logger.Warn().Err(err).Str("jid", remoteJID).Msg("Fallback IsOnWhatsApp lookup failed")
-		return "", false
-	}
-
-	for _, r := range results {
-		if r.IsIn && r.JID != "" && r.JID != remoteJID {
-			s.logger.Info().
-				Str("original_jid", remoteJID).
-				Str("resolved_jid", r.JID).
-				Msg("Resolved fallback JID via IsOnWhatsApp")
-			return r.JID, true
-		}
-	}
-
-	return "", false
+	return s.hsemExecutor.Execute(ctx, client, plan, payload, mediaData)
 }
 
 func (s *WhatsAppService) QueueMessage(ctx context.Context, payload domain.SendMessagePayload) error {
@@ -891,6 +831,88 @@ func (s *WhatsAppService) CheckNumbers(ctx context.Context, sessionID string, ph
 		return nil, errors.New("session not connected")
 	}
 	return client.IsOnWhatsApp(ctx, phones)
+}
+
+// ResolveContact resolves a normalized phone number to its canonical WhatsApp JID
+// by querying IsOnWhatsApp in a single batch with Brazilian 9th-digit variations when applicable.
+func (s *WhatsAppService) ResolveContact(ctx context.Context, sessionID, phone string) (*domain.ResolveContactResult, error) {
+	client, ok := s.clientRepo.GetClient(sessionID)
+	if !ok || !client.IsLoggedIn() {
+		return nil, errors.New("session not connected")
+	}
+
+	candidates := buildPhoneVariations(phone)
+	if len(candidates) == 0 {
+		return nil, errors.New("invalid phone number")
+	}
+
+	results, err := client.IsOnWhatsApp(ctx, candidates)
+	if err != nil {
+		return nil, err
+	}
+
+	var fallback *domain.IsOnWhatsAppResult
+	for i := range results {
+		r := &results[i]
+		if !r.IsIn || r.JID == "" {
+			continue
+		}
+		if r.Phone == candidates[0] {
+			return toResolveContactResult(r), nil
+		}
+		if fallback == nil {
+			fallback = r
+		}
+	}
+
+	if fallback != nil {
+		return toResolveContactResult(fallback), nil
+	}
+
+	return &domain.ResolveContactResult{Exists: false}, nil
+}
+
+func toResolveContactResult(r *domain.IsOnWhatsAppResult) *domain.ResolveContactResult {
+	phone := strings.TrimPrefix(r.Phone, "+")
+	if phone == "" {
+		phone = strings.Split(r.JID, "@")[0]
+	}
+	return &domain.ResolveContactResult{
+		Exists: true,
+		JID:    r.JID,
+		Phone:  phone,
+		Query:  r.Phone,
+	}
+}
+
+// buildPhoneVariations normalizes a phone number to international "+<digits>" format
+// and appends the Brazilian 9th-digit variation when applicable for mobile numbers.
+func buildPhoneVariations(phone string) []string {
+	digits := extractDigits(phone)
+	if digits == "" {
+		return nil
+	}
+
+	candidates := []string{"+" + digits}
+	if strings.HasPrefix(digits, "55") {
+		if len(digits) == 13 && digits[4] == '9' {
+			candidates = append(candidates, "+"+digits[:4]+digits[5:])
+		} else if len(digits) == 12 && digits[4] >= '6' && digits[4] <= '9' {
+			candidates = append(candidates, "+"+digits[:4]+"9"+digits[4:])
+		}
+	}
+	return candidates
+}
+
+func extractDigits(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] >= '0' && s[i] <= '9' {
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
 }
 
 func (s *WhatsAppService) GetUserInfo(ctx context.Context, sessionID, jid string) (*domain.UserInfoResult, error) {

@@ -240,7 +240,14 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 		return "", errors.New("unsupported media type")
 	}
 
-	uploaded, err := w.client.Upload(ctx, input.MediaData, appMedia)
+	isNewsletter := jid.Server == types.NewsletterServer
+
+	var uploaded whatsmeow.UploadResponse
+	if isNewsletter {
+		uploaded, err = w.client.UploadNewsletter(ctx, input.MediaData, appMedia)
+	} else {
+		uploaded, err = w.client.Upload(ctx, input.MediaData, appMedia)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -249,6 +256,13 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 
 	msg := &waE2E.Message{}
 
+	var mediaKey []byte
+	var fileEncSHA256 []byte
+	if !isNewsletter {
+		mediaKey = uploaded.MediaKey
+		fileEncSHA256 = uploaded.FileEncSHA256
+	}
+
 	switch input.Type {
 	case "image":
 		msg.ImageMessage = &waE2E.ImageMessage{
@@ -256,8 +270,8 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 			Mimetype:      proto.String(http.DetectContentType(input.MediaData)),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
-			MediaKey:      uploaded.MediaKey,
-			FileEncSHA256: uploaded.FileEncSHA256,
+			MediaKey:      mediaKey,
+			FileEncSHA256: fileEncSHA256,
 			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uploaded.FileLength),
 			ContextInfo:   ctxInfo,
@@ -269,8 +283,8 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 			Mimetype:      proto.String(http.DetectContentType(input.MediaData)),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
-			MediaKey:      uploaded.MediaKey,
-			FileEncSHA256: uploaded.FileEncSHA256,
+			MediaKey:      mediaKey,
+			FileEncSHA256: fileEncSHA256,
 			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uploaded.FileLength),
 			GifPlayback:   proto.Bool(input.IsGIF),
@@ -282,8 +296,8 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 			Mimetype:      proto.String("audio/ogg; codecs=opus"),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
-			MediaKey:      uploaded.MediaKey,
-			FileEncSHA256: uploaded.FileEncSHA256,
+			MediaKey:      mediaKey,
+			FileEncSHA256: fileEncSHA256,
 			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uploaded.FileLength),
 			PTT:           proto.Bool(input.IsPTT),
@@ -307,8 +321,8 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 			FileName:      proto.String(input.FileName),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
-			MediaKey:      uploaded.MediaKey,
-			FileEncSHA256: uploaded.FileEncSHA256,
+			MediaKey:      mediaKey,
+			FileEncSHA256: fileEncSHA256,
 			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uploaded.FileLength),
 			ContextInfo:   ctxInfo,
@@ -318,8 +332,8 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 		msg.StickerMessage = &waE2E.StickerMessage{
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
-			MediaKey:      uploaded.MediaKey,
-			FileEncSHA256: uploaded.FileEncSHA256,
+			MediaKey:      mediaKey,
+			FileEncSHA256: fileEncSHA256,
 			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uploaded.FileLength),
 			Mimetype:      proto.String("image/webp"),
@@ -327,7 +341,14 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 		}
 	}
 
-	resp, err := w.client.SendMessage(ctx, jid, msg)
+	var resp whatsmeow.SendResponse
+	if isNewsletter {
+		resp, err = w.client.SendMessage(ctx, jid, msg, whatsmeow.SendRequestExtra{
+			MediaHandle: uploaded.Handle,
+		})
+	} else {
+		resp, err = w.client.SendMessage(ctx, jid, msg)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -438,14 +459,40 @@ func (w *WhatsMeowAdapter) mapMessageEvent(evt *events.Message) domain.Event {
 		return nil
 	}
 
-	return domain.MessageEvent{
-		ID:        evt.Info.ID,
-		SenderJID: evt.Info.Sender.String(),
-		PushName:  evt.Info.PushName,
-		IsFromMe:  evt.Info.IsFromMe,
-		Timestamp: evt.Info.Timestamp,
-		Text:      extractMessageBody(evt),
+	var senderAltJID string
+	if !evt.Info.SenderAlt.IsEmpty() {
+		senderAltJID = evt.Info.SenderAlt.String()
 	}
+
+	var chatJID string
+	if !evt.Info.Chat.IsEmpty() {
+		chatJID = evt.Info.Chat.String()
+	}
+
+	return domain.MessageEvent{
+		ID:           evt.Info.ID,
+		ChatJID:      chatJID,
+		SenderJID:    evt.Info.Sender.String(),
+		SenderAltJID: senderAltJID,
+		SenderPhone:  extractSenderPhone(evt.Info.Sender, evt.Info.SenderAlt),
+		IsGroup:      evt.Info.IsGroup,
+		PushName:     evt.Info.PushName,
+		IsFromMe:     evt.Info.IsFromMe,
+		Timestamp:    evt.Info.Timestamp,
+		Text:         extractMessageBody(evt),
+	}
+}
+
+// extractSenderPhone returns the phone number digits from the sender's PN JID,
+// falling back to SenderAlt when the primary Sender uses LID addressing.
+func extractSenderPhone(sender, senderAlt types.JID) string {
+	if sender.Server == types.DefaultUserServer && sender.User != "" {
+		return sender.User
+	}
+	if senderAlt.Server == types.DefaultUserServer && senderAlt.User != "" {
+		return senderAlt.User
+	}
+	return ""
 }
 
 func (w *WhatsMeowAdapter) mapHistorySync(evt *events.HistorySync) domain.Event {

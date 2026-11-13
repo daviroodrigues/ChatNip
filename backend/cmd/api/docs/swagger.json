@@ -1,0 +1,33 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Enterprise-Grade Multi-Tenant WhatsApp Gateway \u0026 Event Dispatcher.",
+        "title": "ChatNip WhatsApp Gateway API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "ChatNip Engineering",
+            "url": "https://github.com/daviroodrigues/ChatNip"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {},
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "description": "Chave de API de cliente para envio e operações de mensagens (formato cn_live_*)",
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        },
+        "InternalKeyAuth": {
+            "description": "Chave interna administrativa mestre para gerenciamento de credenciais e instâncias",
+            "type": "apiKey",
+            "name": "X-Internal-Key",
+            "in": "header"
+        }
+    }
+}

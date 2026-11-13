@@ -1,11 +1,15 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type SendMessagePayload struct {
 	CorrelationID     string `json:"correlation_id"`
 	SessionID         string `json:"session_id"`
 	RemoteJID         string `json:"jid"`
+	TargetType        string `json:"target_type,omitempty"` // "contact", "group", "status", "newsletter"
 	Text              string `json:"message"`
 	IsGroup           bool   `json:"is_group"`
 	IsPriority        bool   `json:"is_priority"`
@@ -22,6 +26,18 @@ type SendMessagePayload struct {
 	TargetMsgID       string `json:"target_msg_id,omitempty"`
 	TargetParticipant string `json:"target_participant,omitempty"`
 	Reaction          string `json:"reaction,omitempty"`
+}
+
+// IsBroadcastOrChannelTarget reports whether the payload targets WhatsApp Status
+// (status@broadcast) or a Newsletter/Channel (@newsletter), where chat presence
+// and read receipts are not applicable.
+func (p SendMessagePayload) IsBroadcastOrChannelTarget() bool {
+	return p.Action == "status" ||
+		p.TargetType == "status" ||
+		p.TargetType == "newsletter" ||
+		p.TargetType == "channel" ||
+		p.RemoteJID == "status@broadcast" ||
+		strings.HasSuffix(p.RemoteJID, "@newsletter")
 }
 
 type MessageSentData struct {

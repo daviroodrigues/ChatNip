@@ -44,20 +44,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/auth.APIKey"
+                                "$ref": "#/definitions/internal_kit_auth.APIKey"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -86,7 +86,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.CreateKeyRequest"
+                            "$ref": "#/definitions/internal_kit_auth.CreateKeyRequest"
                         }
                     }
                 ],
@@ -94,25 +94,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/auth.CreateKeyResponse"
+                            "$ref": "#/definitions/internal_kit_auth.CreateKeyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -155,25 +155,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -219,13 +219,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -257,7 +257,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.BlocklistRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.BlocklistRequest"
                         }
                     }
                 ],
@@ -274,13 +274,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -319,20 +319,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.NewsletterInfo"
+                                "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.NewsletterInfo"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -364,7 +364,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.CreateChannelRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.CreateChannelRequest"
                         }
                     }
                 ],
@@ -372,19 +372,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/domain.NewsletterInfo"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.NewsletterInfo"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -425,7 +425,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.FollowChannelRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.FollowChannelRequest"
                         }
                     }
                 ],
@@ -442,13 +442,77 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/channels/{jid}/send": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "InternalKeyAuth": []
+                    }
+                ],
+                "description": "Enfileira uma mensagem de texto ou mídia para envio em um Canal (Newsletter) do WhatsApp.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WhatsApp - Canais"
+                ],
+                "summary": "Publicar Mensagem em Canal (Newsletter)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JID do Canal (ex: 123456789@newsletter)",
+                        "name": "jid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados da Publicação",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SendChannelMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -489,7 +553,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.FollowChannelRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.FollowChannelRequest"
                         }
                     }
                 ],
@@ -506,13 +570,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -565,13 +629,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -612,7 +676,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetChatArchiveRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetChatArchiveRequest"
                         }
                     }
                 ],
@@ -629,13 +693,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -676,7 +740,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetChatMuteRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetChatMuteRequest"
                         }
                     }
                 ],
@@ -693,13 +757,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -740,7 +804,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetChatPinRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetChatPinRequest"
                         }
                     }
                 ],
@@ -757,13 +821,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -802,20 +866,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.ContactInfo"
+                                "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.ContactInfo"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -849,7 +913,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.CheckNumbersRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.CheckNumbersRequest"
                         }
                     }
                 ],
@@ -859,20 +923,74 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.IsOnWhatsAppResult"
+                                "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.IsOnWhatsAppResult"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/contacts/resolve": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "InternalKeyAuth": []
+                    }
+                ],
+                "description": "Recebe um telefone normalizado, monta variações com e sem o 9º dígito (quando aplicável), consulta o WhatsApp em lote único e retorna o JID exato ou informa que não existe.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WhatsApp - Contatos"
+                ],
+                "summary": "Resolver JID Canônico de Contato",
+                "parameters": [
+                    {
+                        "description": "Sessão e Telefone Normalizado",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.ResolveContactRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.ResolveContactResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -916,19 +1034,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.UserInfoResult"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.UserInfoResult"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -965,19 +1083,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ListGroupsResponse"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.ListGroupsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1009,7 +1127,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.CreateGroupRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.CreateGroupRequest"
                         }
                     }
                 ],
@@ -1017,19 +1135,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handler.CreateGroupResponse"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.CreateGroupResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1073,19 +1191,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.GroupInviteInfo"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.GroupInviteInfo"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1119,7 +1237,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.JoinGroupLinkRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.JoinGroupLinkRequest"
                         }
                     }
                 ],
@@ -1136,13 +1254,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1176,7 +1294,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.JoinGroupInviteMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.JoinGroupInviteMessageRequest"
                         }
                     }
                 ],
@@ -1193,13 +1311,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1233,7 +1351,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetGroupMessageSettingRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetGroupMessageSettingRequest"
                         }
                     }
                 ],
@@ -1250,13 +1368,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1300,19 +1418,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.GroupMetadata"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.GroupMetadata"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1365,13 +1483,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1424,13 +1542,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1470,7 +1588,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/handler.LeaveGroupRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LeaveGroupRequest"
                         }
                     },
                     {
@@ -1493,13 +1611,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1540,7 +1658,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetGroupNameRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetGroupNameRequest"
                         }
                     }
                 ],
@@ -1557,13 +1675,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1604,7 +1722,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.UpdateGroupParticipantsRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.UpdateGroupParticipantsRequest"
                         }
                     }
                 ],
@@ -1619,13 +1737,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1666,7 +1784,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetGroupPhotoRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetGroupPhotoRequest"
                         }
                     }
                 ],
@@ -1683,13 +1801,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1740,13 +1858,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1787,7 +1905,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetGroupInfoSettingRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetGroupInfoSettingRequest"
                         }
                     }
                 ],
@@ -1804,13 +1922,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1851,7 +1969,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SetGroupTopicRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SetGroupTopicRequest"
                         }
                     }
                 ],
@@ -1868,13 +1986,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1908,7 +2026,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LoginRequest"
                         }
                     }
                 ],
@@ -1916,25 +2034,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LoginResponse"
                         }
                     },
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginResponse"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LoginResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -1968,7 +2086,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginPairCodeRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LoginPairCodeRequest"
                         }
                     }
                 ],
@@ -1976,19 +2094,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.LoginPairCodeResponse"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LoginPairCodeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2022,7 +2140,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.LogoutRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.LogoutRequest"
                         }
                     }
                 ],
@@ -2036,19 +2154,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2082,7 +2200,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.EditMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.EditMessageRequest"
                         }
                     }
                 ],
@@ -2099,13 +2217,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2139,7 +2257,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.ReactionMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.ReactionMessageRequest"
                         }
                     }
                 ],
@@ -2156,13 +2274,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2196,7 +2314,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.ReadMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.ReadMessageRequest"
                         }
                     }
                 ],
@@ -2213,13 +2331,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2253,7 +2371,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.RevokeMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.RevokeMessageRequest"
                         }
                     }
                 ],
@@ -2270,13 +2388,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2310,7 +2428,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.UpdateProxyRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.UpdateProxyRequest"
                         }
                     }
                 ],
@@ -2327,19 +2445,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2373,7 +2491,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.ValidateProxyRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.ValidateProxyRequest"
                         }
                     }
                 ],
@@ -2381,19 +2499,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.ProxyValidationResult"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.ProxyValidationResult"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2427,7 +2545,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SendMessageRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SendMessageRequest"
                         }
                     }
                 ],
@@ -2444,13 +2562,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2488,14 +2606,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.SessionStatus"
+                                "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.SessionStatus"
                             }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2532,19 +2650,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.SessionStatus"
+                            "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.SessionStatus"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2578,7 +2696,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.SendStatusRequest"
+                            "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.SendStatusRequest"
                         }
                     }
                 ],
@@ -2595,13 +2713,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apierrors.AppError"
+                            "$ref": "#/definitions/chatnip_internal_kit_apierrors.AppError"
                         }
                     }
                 }
@@ -2641,7 +2759,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "apierrors.AppError": {
+        "chatnip_internal_kit_apierrors.AppError": {
             "type": "object",
             "properties": {
                 "error": {
@@ -2649,55 +2767,7 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.APIKey": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "masked_key": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "revoked_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.CreateKeyRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.CreateKeyResponse": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "masked_key": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ContactInfo": {
+        "chatnip_internal_modules_whatsapp_domain.ContactInfo": {
             "type": "object",
             "properties": {
                 "full_name": {
@@ -2711,7 +2781,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Group": {
+        "chatnip_internal_modules_whatsapp_domain.Group": {
             "type": "object",
             "properties": {
                 "jid": {
@@ -2728,7 +2798,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.GroupInviteInfo": {
+        "chatnip_internal_modules_whatsapp_domain.GroupInviteInfo": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2748,7 +2818,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.GroupMetadata": {
+        "chatnip_internal_modules_whatsapp_domain.GroupMetadata": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2778,7 +2848,7 @@ const docTemplate = `{
                 "participants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.GroupParticipant"
+                        "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.GroupParticipant"
                     }
                 },
                 "topic": {
@@ -2789,7 +2859,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.GroupParticipant": {
+        "chatnip_internal_modules_whatsapp_domain.GroupParticipant": {
             "type": "object",
             "properties": {
                 "display_name": {
@@ -2809,7 +2879,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.IsOnWhatsAppResult": {
+        "chatnip_internal_modules_whatsapp_domain.IsOnWhatsAppResult": {
             "type": "object",
             "properties": {
                 "is_in": {
@@ -2823,7 +2893,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.NewsletterInfo": {
+        "chatnip_internal_modules_whatsapp_domain.NewsletterInfo": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2843,7 +2913,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ProxyValidationResult": {
+        "chatnip_internal_modules_whatsapp_domain.ProxyValidationResult": {
             "type": "object",
             "properties": {
                 "error": {
@@ -2860,7 +2930,24 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SessionStatus": {
+        "chatnip_internal_modules_whatsapp_domain.ResolveContactResult": {
+            "type": "object",
+            "properties": {
+                "exists": {
+                    "type": "boolean"
+                },
+                "jid": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "chatnip_internal_modules_whatsapp_domain.SessionStatus": {
             "type": "object",
             "properties": {
                 "connected": {
@@ -2892,7 +2979,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.UserInfoResult": {
+        "chatnip_internal_modules_whatsapp_domain.UserInfoResult": {
             "type": "object",
             "properties": {
                 "jid": {
@@ -2909,7 +2996,55 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.BlocklistRequest": {
+        "internal_kit_auth.APIKey": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "masked_key": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "revoked_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_kit_auth.CreateKeyRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_kit_auth.CreateKeyResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "masked_key": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_modules_whatsapp_delivery_http_handler.BlocklistRequest": {
             "type": "object",
             "properties": {
                 "block": {
@@ -2923,7 +3058,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.CheckNumbersRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.CheckNumbersRequest": {
             "type": "object",
             "properties": {
                 "phones": {
@@ -2937,7 +3072,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.CreateChannelRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.CreateChannelRequest": {
             "type": "object",
             "properties": {
                 "avatar_base64": {
@@ -2954,7 +3089,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.CreateGroupRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.CreateGroupRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -2971,7 +3106,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.CreateGroupResponse": {
+        "internal_modules_whatsapp_delivery_http_handler.CreateGroupResponse": {
             "type": "object",
             "properties": {
                 "group_id": {
@@ -2982,7 +3117,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.EditMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.EditMessageRequest": {
             "type": "object",
             "properties": {
                 "correlation_id": {
@@ -3008,7 +3143,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.FollowChannelRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.FollowChannelRequest": {
             "type": "object",
             "properties": {
                 "channel_jid": {
@@ -3019,7 +3154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.JoinGroupInviteMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.JoinGroupInviteMessageRequest": {
             "type": "object",
             "properties": {
                 "code": {
@@ -3039,7 +3174,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.JoinGroupLinkRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.JoinGroupLinkRequest": {
             "type": "object",
             "properties": {
                 "code": {
@@ -3050,7 +3185,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LeaveGroupRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.LeaveGroupRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3061,13 +3196,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.ListGroupsResponse": {
+        "internal_modules_whatsapp_delivery_http_handler.ListGroupsResponse": {
             "type": "object",
             "properties": {
                 "groups": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Group"
+                        "$ref": "#/definitions/chatnip_internal_modules_whatsapp_domain.Group"
                     }
                 },
                 "session_id": {
@@ -3075,7 +3210,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginPairCodeRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.LoginPairCodeRequest": {
             "type": "object",
             "properties": {
                 "phone": {
@@ -3092,7 +3227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginPairCodeResponse": {
+        "internal_modules_whatsapp_delivery_http_handler.LoginPairCodeResponse": {
             "type": "object",
             "properties": {
                 "pair_code": {
@@ -3103,7 +3238,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.LoginRequest": {
             "type": "object",
             "properties": {
                 "proxy_url": {
@@ -3117,7 +3252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LoginResponse": {
+        "internal_modules_whatsapp_delivery_http_handler.LoginResponse": {
             "type": "object",
             "properties": {
                 "msg": {
@@ -3128,7 +3263,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.LogoutRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.LogoutRequest": {
             "type": "object",
             "properties": {
                 "session_id": {
@@ -3136,7 +3271,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.MediaType": {
+        "internal_modules_whatsapp_delivery_http_handler.MediaType": {
             "type": "string",
             "enum": [
                 "image",
@@ -3153,7 +3288,7 @@ const docTemplate = `{
                 "MediaTypeSticker"
             ]
         },
-        "handler.ReactionMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.ReactionMessageRequest": {
             "type": "object",
             "properties": {
                 "correlation_id": {
@@ -3183,7 +3318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.ReadMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.ReadMessageRequest": {
             "type": "object",
             "properties": {
                 "chat_jid": {
@@ -3203,7 +3338,18 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.RevokeMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.ResolveContactRequest": {
+            "type": "object",
+            "properties": {
+                "phone": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_modules_whatsapp_delivery_http_handler.RevokeMessageRequest": {
             "type": "object",
             "properties": {
                 "correlation_id": {
@@ -3229,7 +3375,36 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SendMessageRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SendChannelMessageRequest": {
+            "type": "object",
+            "properties": {
+                "correlation_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "is_gif": {
+                    "type": "boolean"
+                },
+                "is_priority": {
+                    "type": "boolean"
+                },
+                "media_type": {
+                    "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.MediaType"
+                },
+                "media_url": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_modules_whatsapp_delivery_http_handler.SendMessageRequest": {
             "type": "object",
             "properties": {
                 "correlation_id": {
@@ -3254,7 +3429,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "media_type": {
-                    "$ref": "#/definitions/handler.MediaType"
+                    "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.MediaType"
                 },
                 "media_url": {
                     "type": "string"
@@ -3270,17 +3445,21 @@ const docTemplate = `{
                 },
                 "session_id": {
                     "type": "string"
+                },
+                "target_type": {
+                    "description": "\"contact\", \"group\", \"status\", \"newsletter\"",
+                    "type": "string"
                 }
             }
         },
-        "handler.SendStatusRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SendStatusRequest": {
             "type": "object",
             "properties": {
                 "correlation_id": {
                     "type": "string"
                 },
                 "media_type": {
-                    "$ref": "#/definitions/handler.MediaType"
+                    "$ref": "#/definitions/internal_modules_whatsapp_delivery_http_handler.MediaType"
                 },
                 "media_url": {
                     "type": "string"
@@ -3293,7 +3472,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetChatArchiveRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetChatArchiveRequest": {
             "type": "object",
             "properties": {
                 "archive": {
@@ -3307,7 +3486,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetChatMuteRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetChatMuteRequest": {
             "type": "object",
             "properties": {
                 "chat_jid": {
@@ -3324,7 +3503,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetChatPinRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetChatPinRequest": {
             "type": "object",
             "properties": {
                 "chat_jid": {
@@ -3338,7 +3517,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetGroupInfoSettingRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetGroupInfoSettingRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3352,7 +3531,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetGroupMessageSettingRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetGroupMessageSettingRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3366,7 +3545,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetGroupNameRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetGroupNameRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3380,7 +3559,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetGroupPhotoRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetGroupPhotoRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3394,7 +3573,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.SetGroupTopicRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.SetGroupTopicRequest": {
             "type": "object",
             "properties": {
                 "group_jid": {
@@ -3408,7 +3587,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.UpdateGroupParticipantsRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.UpdateGroupParticipantsRequest": {
             "type": "object",
             "properties": {
                 "action": {
@@ -3429,7 +3608,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.UpdateProxyRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.UpdateProxyRequest": {
             "type": "object",
             "properties": {
                 "proxy_url": {
@@ -3440,7 +3619,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.ValidateProxyRequest": {
+        "internal_modules_whatsapp_delivery_http_handler.ValidateProxyRequest": {
             "type": "object",
             "properties": {
                 "proxy_url": {

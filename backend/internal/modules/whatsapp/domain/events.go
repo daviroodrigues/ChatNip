@@ -35,16 +35,20 @@ type LoggedOutEvent struct {
 func (e LoggedOutEvent) EventType() EventType { return TypeLoggedOut }
 
 type MessageEvent struct {
-	ID        string    `json:"id"`
-	SessionID string    `json:"session_id"`
-	TenantID  string    `json:"tenant_id"`
-	SenderJID string    `json:"sender_jid"`
-	PushName  string    `json:"push_name"`
-	Text      string    `json:"text"`
-	IsFromMe  bool      `json:"is_from_me"`
-	Timestamp time.Time `json:"timestamp"`
-	MediaType string    `json:"media_type,omitempty"`
-	MediaURL  string    `json:"media_url,omitempty"`
+	ID           string    `json:"id"`
+	SessionID    string    `json:"session_id"`
+	TenantID     string    `json:"tenant_id"`
+	ChatJID      string    `json:"chat_jid,omitempty"`
+	SenderJID    string    `json:"sender_jid"`
+	SenderAltJID string    `json:"sender_alt_jid,omitempty"`
+	SenderPhone  string    `json:"sender_phone,omitempty"`
+	IsGroup      bool      `json:"is_group,omitempty"`
+	PushName     string    `json:"push_name"`
+	Text         string    `json:"text"`
+	IsFromMe     bool      `json:"is_from_me"`
+	Timestamp    time.Time `json:"timestamp"`
+	MediaType    string    `json:"media_type,omitempty"`
+	MediaURL     string    `json:"media_url,omitempty"`
 }
 
 func (e MessageEvent) EventType() EventType { return TypeMessage }
