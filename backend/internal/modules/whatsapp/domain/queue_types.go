@@ -63,6 +63,7 @@ type SendMessagePayload struct {
 	TargetMsgID       string `json:"target_msg_id,omitempty"`
 	TargetParticipant string `json:"target_participant,omitempty"`
 	Reaction          string `json:"reaction,omitempty"`
+	PresenceState     string `json:"presence_state,omitempty"`
 	MediaFilePath     string `json:"-"`
 	MediaFileSize     int64  `json:"-"`
 	MediaMimeType     string `json:"-"`

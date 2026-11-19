@@ -12,6 +12,7 @@ const (
 	TypeReceipt       EventType = "receipt"
 	TypeChatPresence  EventType = "chat_presence"
 	TypeCallOffer     EventType = "call_offer"
+	TypeCallTerminate EventType = "call_terminate"
 	TypeUndecryptable EventType = "undecryptable"
 	TypeGroupInfo     EventType = "group_info"
 )
@@ -69,6 +70,9 @@ type MessageEvent struct {
 	Text         string                   `json:"text"`
 	IsFromMe     bool                     `json:"is_from_me"`
 	Timestamp    time.Time                `json:"timestamp"`
+	Action       string                   `json:"action,omitempty"`        // "", "reaction", "revoke", "edit"
+	TargetMsgID  string                   `json:"target_msg_id,omitempty"` // target message ID for reaction/revoke/edit
+	Reaction     string                   `json:"reaction,omitempty"`      // emoji for reaction (empty = removed)
 	MediaType    string                   `json:"media_type,omitempty"`
 	MediaURL     string                   `json:"media_url,omitempty"`
 	Media        *MediaAttachment         `json:"media,omitempty"`
@@ -100,7 +104,8 @@ type ChatPresenceEvent struct {
 	TenantID  string    `json:"tenant_id"`
 	ChatJID   string    `json:"chat_jid"`
 	SenderJID string    `json:"sender_jid"`
-	State     string    `json:"state"` // "composing", "recording", "paused"
+	State     string    `json:"state"`           // "composing", "paused"
+	Media     string    `json:"media,omitempty"` // "" (text) or "audio" (recording)
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -116,6 +121,17 @@ type CallOfferEvent struct {
 }
 
 func (e CallOfferEvent) EventType() EventType { return TypeCallOffer }
+
+type CallTerminateEvent struct {
+	SessionID string    `json:"session_id"`
+	TenantID  string    `json:"tenant_id"`
+	CallID    string    `json:"call_id"`
+	CallerJID string    `json:"caller_jid"`
+	Reason    string    `json:"reason"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+func (e CallTerminateEvent) EventType() EventType { return TypeCallTerminate }
 
 type UndecryptableMessageEvent struct {
 	SessionID string    `json:"session_id"`

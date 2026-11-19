@@ -63,6 +63,12 @@ func (m *mockMessenger) MarkAsRead(ctx context.Context, jid string, msgID string
 	return nil
 }
 
+func (m *mockMessenger) RejectCall(ctx context.Context, callerJID string, callID string) error {
+	m.lastAction = "reject_call"
+	m.lastMessageID = callID
+	return nil
+}
+
 func (m *mockMessenger) CreateGroup(ctx context.Context, name string, participants []string) (string, error) {
 	return "group_123", nil
 }

@@ -78,7 +78,7 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 				}
 				messageID = id
 
-			case "reaction":
+			case "reaction", "react":
 				id, err := client.SendReaction(ctx, payload.RemoteJID, payload.TargetParticipant, payload.TargetMsgID, payload.Reaction)
 				if err != nil {
 					e.logger.Error().Err(err).Msg("Failed to send reaction")
@@ -86,13 +86,35 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 				}
 				messageID = id
 
-			case "revoke":
+			case "revoke", "delete":
 				id, err := client.RevokeMessage(ctx, payload.RemoteJID, payload.TargetParticipant, payload.TargetMsgID)
 				if err != nil {
 					e.logger.Error().Err(err).Msg("Failed to revoke message")
 					return "", err
 				}
 				messageID = id
+
+			case "presence":
+				if !payload.IsBroadcastOrChannelTarget() {
+					state := payload.PresenceState
+					if state == "" {
+						state = payload.Text
+					}
+					if state == "" {
+						state = "composing"
+					}
+					if err := client.SendPresence(ctx, payload.RemoteJID, state); err != nil {
+						e.logger.Error().Err(err).Msg("Failed to send chat presence")
+						return "", err
+					}
+				}
+
+			case "reject_call":
+				if err := client.RejectCall(ctx, payload.RemoteJID, payload.TargetMsgID); err != nil {
+					e.logger.Error().Err(err).Str("call_id", payload.TargetMsgID).Msg("Failed to reject call")
+					return "", err
+				}
+				messageID = payload.TargetMsgID
 
 			case "read", "mark_read":
 				msgToRead := payload.TargetMsgID

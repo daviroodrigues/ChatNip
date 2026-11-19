@@ -406,6 +406,17 @@ func (w *WhatsMeowAdapter) MarkAsRead(ctx context.Context, jidStr string, msgID 
 	return w.client.MarkRead(ctx, ids, time.Now(), jid, jid, types.ReceiptTypeRead)
 }
 
+func (w *WhatsMeowAdapter) RejectCall(ctx context.Context, callerJID string, callID string) error {
+	if w.client == nil {
+		return errors.New("client not initialized")
+	}
+	jid, err := types.ParseJID(callerJID)
+	if err != nil {
+		return err
+	}
+	return w.client.RejectCall(ctx, jid, callID)
+}
+
 func extractMessageIDs(id string) []types.MessageID {
 	if id == "" {
 		return nil
@@ -454,6 +465,7 @@ func (w *WhatsMeowAdapter) mapToDomainEvent(rawEvt interface{}) domain.Event {
 			ChatJID:   evt.Chat.String(),
 			SenderJID: evt.Sender.String(),
 			State:     string(evt.State),
+			Media:     string(evt.Media),
 			Timestamp: time.Now(),
 		}
 	case *events.CallOffer:
@@ -465,6 +477,17 @@ func (w *WhatsMeowAdapter) mapToDomainEvent(rawEvt interface{}) domain.Event {
 			CallID:    evt.CallID,
 			CallerJID: caller,
 			IsGroup:   !evt.GroupJID.IsEmpty(),
+			Timestamp: evt.Timestamp,
+		}
+	case *events.CallTerminate:
+		caller := evt.CallCreator.String()
+		if caller == "" {
+			caller = evt.From.String()
+		}
+		return domain.CallTerminateEvent{
+			CallID:    evt.CallID,
+			CallerJID: caller,
+			Reason:    evt.Reason,
 			Timestamp: evt.Timestamp,
 		}
 	case *events.UndecryptableMessage:
@@ -511,7 +534,7 @@ func (w *WhatsMeowAdapter) mapMessageEvent(evt *events.Message) domain.Event {
 		mediaType = rawMedia.MediaType
 	}
 
-	return domain.MessageEvent{
+	out := domain.MessageEvent{
 		ID:           evt.Info.ID,
 		ChatJID:      chatJID,
 		SenderJID:    evt.Info.Sender.String(),
@@ -525,6 +548,47 @@ func (w *WhatsMeowAdapter) mapMessageEvent(evt *events.Message) domain.Event {
 		MediaType:    mediaType,
 		RawMedia:     rawMedia,
 	}
+
+	if evt.Message != nil {
+		if rx := evt.Message.GetReactionMessage(); rx != nil {
+			out.Action = "reaction"
+			out.TargetMsgID = rx.GetKey().GetID()
+			out.Reaction = rx.GetText()
+			out.Text = ""
+		} else if pm := evt.Message.GetProtocolMessage(); pm != nil {
+			switch pm.GetType() {
+			case waE2E.ProtocolMessage_REVOKE:
+				out.Action = "revoke"
+				out.TargetMsgID = pm.GetKey().GetID()
+				out.Text = ""
+			case waE2E.ProtocolMessage_MESSAGE_EDIT:
+				out.Action = "edit"
+				out.TargetMsgID = pm.GetKey().GetID()
+				out.Text = extractTextFromWaMessage(pm.GetEditedMessage())
+			}
+		}
+	}
+
+	return out
+}
+
+func extractTextFromWaMessage(msg *waE2E.Message) string {
+	if msg == nil {
+		return ""
+	}
+	if len(msg.GetConversation()) > 0 {
+		return msg.GetConversation()
+	}
+	if extended := msg.GetExtendedTextMessage(); extended != nil {
+		return extended.GetText()
+	}
+	if img := msg.GetImageMessage(); img != nil {
+		return img.GetCaption()
+	}
+	if vid := msg.GetVideoMessage(); vid != nil {
+		return vid.GetCaption()
+	}
+	return ""
 }
 
 func extractMediaDescriptor(msg *waE2E.Message) *domain.WhatsAppMediaDescriptor {

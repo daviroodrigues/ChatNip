@@ -48,6 +48,7 @@ type Messenger interface {
 	SendReaction(ctx context.Context, jid string, senderJID string, messageID string, reaction string) (string, error)
 	RevokeMessage(ctx context.Context, jid string, senderJID string, messageID string) (string, error)
 	MarkAsRead(ctx context.Context, jid string, msgID string) error
+	RejectCall(ctx context.Context, callerJID string, callID string) error
 }
 
 type GroupManager interface {

@@ -255,6 +255,34 @@ func (h *CallOfferHandler) Handle(ctx context.Context, evt domain.Event, session
 	}
 }
 
+type CallTerminateHandler struct {
+	logger    zerolog.Logger
+	publisher domain.EventPublisher
+}
+
+func NewCallTerminateHandler(logger zerolog.Logger, publisher domain.EventPublisher) *CallTerminateHandler {
+	return &CallTerminateHandler{logger: logger, publisher: publisher}
+}
+
+func (h *CallTerminateHandler) CanHandle(evt domain.Event) bool {
+	return evt.EventType() == domain.TypeCallTerminate
+}
+
+func (h *CallTerminateHandler) Handle(ctx context.Context, evt domain.Event, sessionID string, tenantID string) {
+	e, ok := evt.(domain.CallTerminateEvent)
+	if !ok {
+		return
+	}
+	e.SessionID = sessionID
+	e.TenantID = tenantID
+
+	envelope := domain.NewEventEnvelope("call.terminated", "", tenantID, sessionID, e)
+
+	if err := h.publisher.Publish(ctx, "whatsapp.call.terminated", envelope); err != nil {
+		h.logger.Error().Err(err).Str("session_id", sessionID).Msg("Failed to publish call terminate to RabbitMQ")
+	}
+}
+
 type UndecryptableMessageHandler struct {
 	logger    zerolog.Logger
 	publisher domain.EventPublisher

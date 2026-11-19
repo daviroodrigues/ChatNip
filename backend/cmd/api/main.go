@@ -101,6 +101,7 @@ func main() {
 	receiptHandler := service.NewReceiptHandler(zLogger, waProducer)
 	presenceHandler := service.NewChatPresenceHandler(zLogger, waProducer)
 	callHandler := service.NewCallOfferHandler(zLogger, waProducer)
+	callTerminateHandler := service.NewCallTerminateHandler(zLogger, waProducer)
 	undecryptableHandler := service.NewUndecryptableMessageHandler(zLogger, waProducer)
 	groupInfoHandler := service.NewGroupInfoHandler(zLogger, waProducer)
 	dispatcher := service.NewEventDispatcher(
@@ -110,6 +111,7 @@ func main() {
 		receiptHandler,
 		presenceHandler,
 		callHandler,
+		callTerminateHandler,
 		undecryptableHandler,
 		groupInfoHandler,
 	)

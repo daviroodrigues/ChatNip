@@ -107,6 +107,8 @@ func decodeSendMessagePayload(body []byte, isFastLane bool) (domain.SendMessageP
 				payload.Action = "presence"
 			case "message.read":
 				payload.Action = "read"
+			case "call.reject":
+				payload.Action = "reject_call"
 			}
 		}
 		payload.IsPriority = isFastLane

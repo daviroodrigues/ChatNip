@@ -188,7 +188,7 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		}
 	}
 
-	if payload.Action == "reaction" || payload.Action == "react" || payload.Action == "revoke" || payload.Action == "delete" || payload.Action == "read" || payload.Action == "mark_read" || payload.Action == "presence" || payload.IsBroadcastOrChannelTarget() {
+	if payload.Action == "reaction" || payload.Action == "react" || payload.Action == "revoke" || payload.Action == "delete" || payload.Action == "read" || payload.Action == "mark_read" || payload.Action == "presence" || payload.Action == "reject_call" || payload.IsBroadcastOrChannelTarget() {
 		quickPlan := hsemDomain.FingerprintPlan{
 			TotalDuration: 300 * time.Millisecond,
 			Steps: []hsemDomain.ActionStep{
