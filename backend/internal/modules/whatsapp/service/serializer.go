@@ -4,8 +4,69 @@ import (
 	"chatnip/internal/modules/whatsapp/domain"
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+// SessionGate provides preemptive per-session mutual exclusion where fast-lane
+// operations signal fastPending and preempt standard-lane batch execution.
+type SessionGate struct {
+	mu          sync.Mutex
+	fastPending atomic.Int32
+}
+
+func (g *SessionGate) AcquireFast(ctx context.Context) error {
+	g.fastPending.Add(1)
+	defer g.fastPending.Add(-1)
+
+	done := make(chan struct{})
+	go func() {
+		g.mu.Lock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		go func() {
+			<-done
+			g.mu.Unlock()
+		}()
+		return ctx.Err()
+	}
+}
+
+func (g *SessionGate) AcquireStandard(ctx context.Context) error {
+	for {
+		if g.fastPending.Load() > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(25 * time.Millisecond):
+				continue
+			}
+		}
+
+		if g.mu.TryLock() {
+			if g.fastPending.Load() > 0 {
+				g.mu.Unlock()
+				continue
+			}
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(25 * time.Millisecond):
+		}
+	}
+}
+
+func (g *SessionGate) Release() {
+	g.mu.Unlock()
+}
 
 const (
 	ContextSwitchMin  = 2 * time.Second
@@ -36,6 +97,7 @@ type SessionWorker struct {
 
 type SessionSerializer struct {
 	workers sync.Map
+	gates   sync.Map
 	service *WhatsAppService
 	mu      sync.Mutex
 }
@@ -44,7 +106,20 @@ func NewSessionSerializer(svc *WhatsAppService) *SessionSerializer {
 	return &SessionSerializer{service: svc}
 }
 
+func (s *SessionSerializer) getOrCreateGate(sessionID string) *SessionGate {
+	if val, ok := s.gates.Load(sessionID); ok {
+		return val.(*SessionGate)
+	}
+	gate := &SessionGate{}
+	actual, _ := s.gates.LoadOrStore(sessionID, gate)
+	return actual.(*SessionGate)
+}
+
 func (s *SessionSerializer) Enqueue(ctx context.Context, payload domain.SendMessagePayload, mediaData []byte, ack domain.Acknowledger) error {
+	if payload.IsPriority {
+		return s.executeFast(ctx, payload, mediaData, ack)
+	}
+
 	worker := s.getOrCreateWorker(payload.SessionID)
 	resultChan := make(chan error, 1)
 
@@ -52,19 +127,12 @@ func (s *SessionSerializer) Enqueue(ctx context.Context, payload domain.SendMess
 		Payload:      payload,
 		MediaData:    mediaData,
 		Result:       resultChan,
-		IsFast:       payload.IsPriority,
+		IsFast:       false,
 		Acknowledger: ack,
 	}
 
-	var targetQueue chan SessionJob
-	if payload.IsPriority {
-		targetQueue = worker.FastQueue
-	} else {
-		targetQueue = worker.StandardQueue
-	}
-
 	select {
-	case targetQueue <- job:
+	case worker.StandardQueue <- job:
 		select {
 		case err := <-resultChan:
 			return err
@@ -74,6 +142,48 @@ func (s *SessionSerializer) Enqueue(ctx context.Context, payload domain.SendMess
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (s *SessionSerializer) executeFast(ctx context.Context, payload domain.SendMessagePayload, mediaData []byte, ack domain.Acknowledger) error {
+	gate := s.getOrCreateGate(payload.SessionID)
+	if err := gate.AcquireFast(ctx); err != nil {
+		return err
+	}
+
+	msgID, err := s.service.ExecuteBurstStep(ctx, payload, mediaData, false)
+	gate.Release()
+
+	if ack != nil && err == nil {
+		s.publishSentAndAck(ctx, payload, msgID, ack)
+	} else if err != nil {
+		s.service.logger.Error().Err(err).
+			Str("session_id", payload.SessionID).
+			Msg("Failed to execute fast-lane step")
+	}
+	return err
+}
+
+func (s *SessionSerializer) publishSentAndAck(ctx context.Context, payload domain.SendMessagePayload, msgID string, ack domain.Acknowledger) {
+	if payload.CorrelationID != "" {
+		evt := domain.MessageSentEvent{
+			SchemaVersion: domain.QueueSchemaVersion,
+			EventType:     "message.sent",
+			CorrelationID: payload.CorrelationID,
+			Timestamp:     time.Now().UTC(),
+			Data: domain.MessageSentData{
+				MessageID: msgID,
+				SessionID: payload.SessionID,
+				JID:       payload.RemoteJID,
+				Status:    "SENT",
+			},
+		}
+
+		if pubErr := s.service.publisher.Publish(ctx, "whatsapp.message.sent", evt); pubErr != nil {
+			s.service.logger.Error().Err(pubErr).Msg("Failed to publish message.sent event")
+		}
+	}
+
+	_ = ack.Ack()
 }
 
 func (s *SessionSerializer) getOrCreateWorker(sessionID string) *SessionWorker {
@@ -215,6 +325,7 @@ LoopColeta:
 
 func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
 	ctx := context.Background()
+	gate := s.getOrCreateGate(w.ID)
 
 	if w.LastChatJID != "" && w.LastChatJID != batch[0].Payload.RemoteJID {
 		delay := s.service.hsemEngine.Math().UniformDuration(ContextSwitchMin, ContextSwitchMax)
@@ -230,30 +341,18 @@ func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
 			time.Sleep(microDelay)
 		}
 
+		if err := gate.AcquireStandard(ctx); err != nil {
+			job.Result <- err
+			close(job.Result)
+			continue
+		}
+
 		msgID, err := s.service.ExecuteBurstStep(ctx, job.Payload, job.MediaData, !isLast)
+		gate.Release()
 
 		if job.Acknowledger != nil {
 			if err == nil {
-
-				if job.Payload.CorrelationID != "" {
-					evt := domain.MessageSentEvent{
-						EventType:     "message.sent",
-						CorrelationID: job.Payload.CorrelationID,
-						Timestamp:     time.Now(),
-						Data: domain.MessageSentData{
-							MessageID: msgID,
-							SessionID: job.Payload.SessionID,
-							JID:       job.Payload.RemoteJID,
-							Status:    "SENT",
-						},
-					}
-
-					if pubErr := s.service.publisher.Publish(ctx, "whatsapp.message.sent", evt); pubErr != nil {
-						s.service.logger.Error().Err(pubErr).Msg("Failed to publish message.sent event")
-					}
-				}
-
-				_ = job.Acknowledger.Ack()
+				s.publishSentAndAck(ctx, job.Payload, msgID, job.Acknowledger)
 			} else {
 				s.service.logger.Error().Err(err).
 					Str("session_id", job.Payload.SessionID).

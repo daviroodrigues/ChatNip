@@ -2,6 +2,7 @@ package service
 
 import (
 	whatsappDomain "chatnip/internal/modules/whatsapp/domain"
+	"context"
 	"testing"
 	"time"
 )
@@ -65,5 +66,40 @@ func TestSessionSerializer_StashedJobFIFO(t *testing.T) {
 	}
 	if nextJob2.Payload.RemoteJID != "jid_A" || nextJob2.Payload.Text != "Msg 3" {
 		t.Errorf("expected nextJob2 to be job3, got %s", nextJob2.Payload.Text)
+	}
+}
+
+func TestSessionGate_FastPreemptsStandard(t *testing.T) {
+	gate := &SessionGate{}
+	ctx := context.Background()
+
+	// Fast lane signals pending before standard acquires.
+	if err := gate.AcquireFast(ctx); err != nil {
+		t.Fatalf("AcquireFast failed: %v", err)
+	}
+
+	stdDone := make(chan struct{})
+	go func() {
+		if err := gate.AcquireStandard(ctx); err != nil {
+			t.Errorf("AcquireStandard failed: %v", err)
+			return
+		}
+		gate.Release()
+		close(stdDone)
+	}()
+
+	// Standard must stay blocked while fast holds the gate.
+	select {
+	case <-stdDone:
+		t.Fatal("AcquireStandard should not proceed while fast holds the gate")
+	case <-time.After(60 * time.Millisecond):
+	}
+
+	gate.Release()
+
+	select {
+	case <-stdDone:
+	case <-time.After(time.Second):
+		t.Fatal("AcquireStandard did not acquire after fast released")
 	}
 }

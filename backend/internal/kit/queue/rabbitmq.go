@@ -138,8 +138,16 @@ func (r *RabbitMQAdapter) SetupExchange(name string, kind string) error {
 }
 
 func (r *RabbitMQAdapter) Consume(queueName string) (<-chan amqp.Delivery, error) {
+	return r.ConsumeWithPrefetch(queueName, 10)
+}
+
+// ConsumeWithPrefetch opens a dedicated AMQP channel for queueName with the given QoS prefetch count.
+func (r *RabbitMQAdapter) ConsumeWithPrefetch(queueName string, prefetchCount int) (<-chan amqp.Delivery, error) {
 	if r.conn == nil || r.conn.IsClosed() {
 		return nil, fmt.Errorf("rabbitmq connection is closed")
+	}
+	if prefetchCount <= 0 {
+		prefetchCount = 1
 	}
 
 	ch, err := r.conn.Channel()
@@ -148,7 +156,7 @@ func (r *RabbitMQAdapter) Consume(queueName string) (<-chan amqp.Delivery, error
 	}
 
 	if err := ch.Qos(
-		10,
+		prefetchCount,
 		0,
 		false,
 	); err != nil {

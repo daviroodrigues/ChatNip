@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -82,43 +83,55 @@ func (s *WhatsAppService) ProcessBackgroundMessage(ctx context.Context, payload 
 
 	var mediaData []byte
 	if payload.MediaURL != "" {
-		var err error
-		mediaData, err = s.downloader.Download(payload.MediaURL)
+		tempDir := ""
+		if s.cfg != nil {
+			tempDir = s.cfg.MediaTempDir
+		}
+		tmpPath, size, mimeType, err := s.downloader.DownloadToTempFile(ctx, payload.MediaURL, tempDir)
 		if err != nil {
 			return fmt.Errorf("failed to download media: %w", err)
 		}
+		defer os.Remove(tmpPath)
+
+		payload.MediaFilePath = tmpPath
+		payload.MediaFileSize = size
+		payload.MediaMimeType = mimeType
 
 		if payload.MediaType == "audio" || payload.IsPTT {
+			audioBytes, readErr := os.ReadFile(tmpPath)
+			if readErr == nil {
+				analysisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+				metadata, err := media.AnalyzeAudio(analysisCtx, audioBytes)
+				cancel()
 
-			analysisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-			metadata, err := media.AnalyzeAudio(analysisCtx, mediaData)
-			cancel()
-
-			if err != nil {
-				s.logger.Warn().Err(err).Msg("Failed to analyze audio metadata, using fallbacks")
-
-			} else {
-
-				payload.Duration = metadata.DurationSeconds
-
-				if payload.IsPTT {
-					payload.Waveform = metadata.Waveform
+				if err != nil {
+					s.logger.Warn().Err(err).Msg("Failed to analyze audio metadata, using fallbacks")
+				} else {
+					payload.Duration = metadata.DurationSeconds
+					if payload.IsPTT {
+						payload.Waveform = metadata.Waveform
+					}
 				}
-			}
 
-			s.logger.Debug().
-				Uint32("duration", payload.Duration).
-				Int("waveform_len", len(payload.Waveform)).
-				Msg("Audio metadata calculated")
+				s.logger.Debug().
+					Uint32("duration", payload.Duration).
+					Int("waveform_len", len(payload.Waveform)).
+					Msg("Audio metadata calculated")
+			}
 		}
 
-		mimeType := http.DetectContentType(mediaData)
 		if payload.MediaType == "image" && mimeType == "image/webp" {
-			converted, err := media.ConvertWebPToJPEG(mediaData, 80)
-			if err != nil {
-				s.logger.Error().Err(err).Msg("failed to convert webp to jpeg")
-			} else {
-				mediaData = converted
+			webpBytes, readErr := os.ReadFile(tmpPath)
+			if readErr == nil {
+				converted, err := media.ConvertWebPToJPEG(webpBytes, 80)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("failed to convert webp to jpeg")
+				} else {
+					mediaData = converted
+					payload.MediaFilePath = ""
+					payload.MediaMimeType = "image/jpeg"
+					payload.MediaFileSize = int64(len(converted))
+				}
 			}
 		}
 	}
@@ -149,8 +162,12 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		MessageType:     hsemDomain.MsgTypeText,
 	}
 
-	if len(mediaData) > 0 {
-		input.FileSizeKB = len(mediaData) / 1024
+	if len(mediaData) > 0 || payload.MediaFilePath != "" {
+		if payload.MediaFileSize > 0 {
+			input.FileSizeKB = int(payload.MediaFileSize / 1024)
+		} else {
+			input.FileSizeKB = len(mediaData) / 1024
+		}
 
 		switch payload.MediaType {
 		case "image":
@@ -171,7 +188,7 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		}
 	}
 
-	if payload.Action == "reaction" || payload.Action == "revoke" || payload.Action == "read" || payload.Action == "mark_read" || payload.IsBroadcastOrChannelTarget() {
+	if payload.Action == "reaction" || payload.Action == "react" || payload.Action == "revoke" || payload.Action == "delete" || payload.Action == "read" || payload.Action == "mark_read" || payload.Action == "presence" || payload.IsBroadcastOrChannelTarget() {
 		quickPlan := hsemDomain.FingerprintPlan{
 			TotalDuration: 300 * time.Millisecond,
 			Steps: []hsemDomain.ActionStep{

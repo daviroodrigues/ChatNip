@@ -1,9 +1,46 @@
 package domain
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 )
+
+const QueueSchemaVersion = "1.0"
+
+// EventEnvelope is the standardized outbound event format published to RabbitMQ.
+type EventEnvelope struct {
+	SchemaVersion string      `json:"schema_version"`
+	EventType     string      `json:"event_type"`
+	CorrelationID string      `json:"correlation_id,omitempty"`
+	Timestamp     time.Time   `json:"timestamp"`
+	TenantID      string      `json:"tenant_id,omitempty"`
+	SessionID     string      `json:"session_id,omitempty"`
+	Data          interface{} `json:"data"`
+}
+
+// CommandEnvelope is the standardized inbound command format consumed from RabbitMQ.
+type CommandEnvelope struct {
+	SchemaVersion string          `json:"schema_version"`
+	CommandType   string          `json:"command_type"`
+	CorrelationID string          `json:"correlation_id"`
+	Timestamp     time.Time       `json:"timestamp"`
+	TenantID      string          `json:"tenant_id,omitempty"`
+	SessionID     string          `json:"session_id"`
+	Data          json.RawMessage `json:"data"`
+}
+
+func NewEventEnvelope(eventType, correlationID, tenantID, sessionID string, data interface{}) EventEnvelope {
+	return EventEnvelope{
+		SchemaVersion: QueueSchemaVersion,
+		EventType:     eventType,
+		CorrelationID: correlationID,
+		Timestamp:     time.Now().UTC(),
+		TenantID:      tenantID,
+		SessionID:     sessionID,
+		Data:          data,
+	}
+}
 
 type SendMessagePayload struct {
 	CorrelationID     string `json:"correlation_id"`
@@ -26,6 +63,9 @@ type SendMessagePayload struct {
 	TargetMsgID       string `json:"target_msg_id,omitempty"`
 	TargetParticipant string `json:"target_participant,omitempty"`
 	Reaction          string `json:"reaction,omitempty"`
+	MediaFilePath     string `json:"-"`
+	MediaFileSize     int64  `json:"-"`
+	MediaMimeType     string `json:"-"`
 }
 
 // IsBroadcastOrChannelTarget reports whether the payload targets WhatsApp Status
@@ -48,6 +88,7 @@ type MessageSentData struct {
 }
 
 type MessageSentEvent struct {
+	SchemaVersion string          `json:"schema_version,omitempty"`
 	EventType     string          `json:"event_type"`
 	CorrelationID string          `json:"correlation_id"`
 	Timestamp     time.Time       `json:"timestamp"`
@@ -62,6 +103,7 @@ type MessageFailedData struct {
 }
 
 type MessageFailedEvent struct {
+	SchemaVersion string            `json:"schema_version,omitempty"`
 	EventType     string            `json:"event_type"`
 	CorrelationID string            `json:"correlation_id"`
 	Timestamp     time.Time         `json:"timestamp"`

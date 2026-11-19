@@ -4,12 +4,15 @@ import (
 	"chatnip/internal/modules/whatsapp/domain"
 	"context"
 	"errors"
+	"fmt"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -242,11 +245,44 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 
 	isNewsletter := jid.Server == types.NewsletterServer
 
+	detectedMime := input.MimeType
 	var uploaded whatsmeow.UploadResponse
-	if isNewsletter {
-		uploaded, err = w.client.UploadNewsletter(ctx, input.MediaData, appMedia)
+	if input.MediaFilePath != "" {
+		f, openErr := os.Open(input.MediaFilePath)
+		if openErr != nil {
+			return "", openErr
+		}
+		defer f.Close()
+
+		if detectedMime == "" {
+			head := make([]byte, 512)
+			n, _ := io.ReadFull(f, head)
+			if n > 0 {
+				detectedMime = http.DetectContentType(head[:n])
+			}
+			if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+				return "", seekErr
+			}
+		}
+
+		if isNewsletter {
+			data, readErr := io.ReadAll(f)
+			if readErr != nil {
+				return "", readErr
+			}
+			uploaded, err = w.client.UploadNewsletter(ctx, data, appMedia)
+		} else {
+			uploaded, err = w.client.UploadReader(ctx, f, nil, appMedia)
+		}
 	} else {
-		uploaded, err = w.client.Upload(ctx, input.MediaData, appMedia)
+		if detectedMime == "" {
+			detectedMime = http.DetectContentType(input.MediaData)
+		}
+		if isNewsletter {
+			uploaded, err = w.client.UploadNewsletter(ctx, input.MediaData, appMedia)
+		} else {
+			uploaded, err = w.client.Upload(ctx, input.MediaData, appMedia)
+		}
 	}
 	if err != nil {
 		return "", err
@@ -267,7 +303,7 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 	case "image":
 		msg.ImageMessage = &waE2E.ImageMessage{
 			Caption:       proto.String(input.Caption),
-			Mimetype:      proto.String(http.DetectContentType(input.MediaData)),
+			Mimetype:      proto.String(detectedMime),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
 			MediaKey:      mediaKey,
@@ -280,7 +316,7 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 	case "video":
 		msg.VideoMessage = &waE2E.VideoMessage{
 			Caption:       proto.String(input.Caption),
-			Mimetype:      proto.String(http.DetectContentType(input.MediaData)),
+			Mimetype:      proto.String(detectedMime),
 			URL:           proto.String(uploaded.URL),
 			DirectPath:    proto.String(uploaded.DirectPath),
 			MediaKey:      mediaKey,
@@ -316,7 +352,7 @@ func (w *WhatsMeowAdapter) SendMedia(ctx context.Context, jidStr string, input d
 	case "document":
 		msg.DocumentMessage = &waE2E.DocumentMessage{
 			Caption:       proto.String(input.Caption),
-			Mimetype:      proto.String(http.DetectContentType(input.MediaData)),
+			Mimetype:      proto.String(detectedMime),
 			Title:         proto.String(input.FileName),
 			FileName:      proto.String(input.FileName),
 			URL:           proto.String(uploaded.URL),
@@ -469,6 +505,12 @@ func (w *WhatsMeowAdapter) mapMessageEvent(evt *events.Message) domain.Event {
 		chatJID = evt.Info.Chat.String()
 	}
 
+	rawMedia := extractMediaDescriptor(evt.Message)
+	mediaType := ""
+	if rawMedia != nil {
+		mediaType = rawMedia.MediaType
+	}
+
 	return domain.MessageEvent{
 		ID:           evt.Info.ID,
 		ChatJID:      chatJID,
@@ -480,7 +522,132 @@ func (w *WhatsMeowAdapter) mapMessageEvent(evt *events.Message) domain.Event {
 		IsFromMe:     evt.Info.IsFromMe,
 		Timestamp:    evt.Info.Timestamp,
 		Text:         extractMessageBody(evt),
+		MediaType:    mediaType,
+		RawMedia:     rawMedia,
 	}
+}
+
+func extractMediaDescriptor(msg *waE2E.Message) *domain.WhatsAppMediaDescriptor {
+	if msg == nil {
+		return nil
+	}
+	if img := msg.GetImageMessage(); img != nil {
+		return &domain.WhatsAppMediaDescriptor{
+			MediaType:     "image",
+			Mimetype:      img.GetMimetype(),
+			DirectPath:    img.GetDirectPath(),
+			MediaKey:      img.GetMediaKey(),
+			FileEncSHA256: img.GetFileEncSHA256(),
+			FileSHA256:    img.GetFileSHA256(),
+			FileLength:    img.GetFileLength(),
+		}
+	}
+	if vid := msg.GetVideoMessage(); vid != nil {
+		return &domain.WhatsAppMediaDescriptor{
+			MediaType:     "video",
+			Mimetype:      vid.GetMimetype(),
+			DirectPath:    vid.GetDirectPath(),
+			MediaKey:      vid.GetMediaKey(),
+			FileEncSHA256: vid.GetFileEncSHA256(),
+			FileSHA256:    vid.GetFileSHA256(),
+			FileLength:    vid.GetFileLength(),
+		}
+	}
+	if aud := msg.GetAudioMessage(); aud != nil {
+		return &domain.WhatsAppMediaDescriptor{
+			MediaType:     "audio",
+			Mimetype:      aud.GetMimetype(),
+			DirectPath:    aud.GetDirectPath(),
+			MediaKey:      aud.GetMediaKey(),
+			FileEncSHA256: aud.GetFileEncSHA256(),
+			FileSHA256:    aud.GetFileSHA256(),
+			FileLength:    aud.GetFileLength(),
+		}
+	}
+	if doc := msg.GetDocumentMessage(); doc != nil {
+		return &domain.WhatsAppMediaDescriptor{
+			MediaType:     "document",
+			Mimetype:      doc.GetMimetype(),
+			DirectPath:    doc.GetDirectPath(),
+			MediaKey:      doc.GetMediaKey(),
+			FileEncSHA256: doc.GetFileEncSHA256(),
+			FileSHA256:    doc.GetFileSHA256(),
+			FileLength:    doc.GetFileLength(),
+			FileName:      doc.GetFileName(),
+		}
+	}
+	if stk := msg.GetStickerMessage(); stk != nil {
+		return &domain.WhatsAppMediaDescriptor{
+			MediaType:     "sticker",
+			Mimetype:      stk.GetMimetype(),
+			DirectPath:    stk.GetDirectPath(),
+			MediaKey:      stk.GetMediaKey(),
+			FileEncSHA256: stk.GetFileEncSHA256(),
+			FileSHA256:    stk.GetFileSHA256(),
+			FileLength:    stk.GetFileLength(),
+		}
+	}
+	return nil
+}
+
+func (w *WhatsMeowAdapter) DownloadMediaToFile(ctx context.Context, desc domain.WhatsAppMediaDescriptor, destFile *os.File) error {
+	if w.client == nil {
+		return errors.New("client not initialized")
+	}
+
+	var downloadable whatsmeow.DownloadableMessage
+	switch desc.MediaType {
+	case "image":
+		downloadable = &waE2E.ImageMessage{
+			DirectPath:    proto.String(desc.DirectPath),
+			MediaKey:      desc.MediaKey,
+			FileEncSHA256: desc.FileEncSHA256,
+			FileSHA256:    desc.FileSHA256,
+			FileLength:    proto.Uint64(desc.FileLength),
+			Mimetype:      proto.String(desc.Mimetype),
+		}
+	case "video":
+		downloadable = &waE2E.VideoMessage{
+			DirectPath:    proto.String(desc.DirectPath),
+			MediaKey:      desc.MediaKey,
+			FileEncSHA256: desc.FileEncSHA256,
+			FileSHA256:    desc.FileSHA256,
+			FileLength:    proto.Uint64(desc.FileLength),
+			Mimetype:      proto.String(desc.Mimetype),
+		}
+	case "audio":
+		downloadable = &waE2E.AudioMessage{
+			DirectPath:    proto.String(desc.DirectPath),
+			MediaKey:      desc.MediaKey,
+			FileEncSHA256: desc.FileEncSHA256,
+			FileSHA256:    desc.FileSHA256,
+			FileLength:    proto.Uint64(desc.FileLength),
+			Mimetype:      proto.String(desc.Mimetype),
+		}
+	case "document":
+		downloadable = &waE2E.DocumentMessage{
+			DirectPath:    proto.String(desc.DirectPath),
+			MediaKey:      desc.MediaKey,
+			FileEncSHA256: desc.FileEncSHA256,
+			FileSHA256:    desc.FileSHA256,
+			FileLength:    proto.Uint64(desc.FileLength),
+			Mimetype:      proto.String(desc.Mimetype),
+			FileName:      proto.String(desc.FileName),
+		}
+	case "sticker":
+		downloadable = &waE2E.StickerMessage{
+			DirectPath:    proto.String(desc.DirectPath),
+			MediaKey:      desc.MediaKey,
+			FileEncSHA256: desc.FileEncSHA256,
+			FileSHA256:    desc.FileSHA256,
+			FileLength:    proto.Uint64(desc.FileLength),
+			Mimetype:      proto.String(desc.Mimetype),
+		}
+	default:
+		return fmt.Errorf("unsupported media type: %s", desc.MediaType)
+	}
+
+	return w.client.DownloadToFile(ctx, downloadable, destFile)
 }
 
 // extractSenderPhone returns the phone number digits from the sender's PN JID,

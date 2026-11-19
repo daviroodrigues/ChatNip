@@ -84,8 +84,18 @@ func main() {
 	waProducer := waQueue.NewWhatsAppProducer(rabbitAdapter)
 	clientRepo := infrastructure.NewClientRepository(waContainer, cfg, zLogger)
 	downloader := &waWeb.HTTPFileDownloader{}
+	mediaIngestRepo := persistence.NewSQLiteMediaIngestRepository(dbConn)
+	mediaIngestSvc := service.NewMediaIngestService(
+		mediaIngestRepo,
+		clientRepo,
+		waProducer,
+		cfg.BackendURL,
+		cfg.BackendInternalKey,
+		cfg.MediaTempDir,
+		zLogger,
+	)
 
-	msgHandler := service.NewMessageHandler(zLogger, waProducer)
+	msgHandler := service.NewMessageHandler(zLogger, waProducer, mediaIngestSvc)
 	pairHandler := service.NewPairSuccessHandler(waRepo, zLogger)
 	historyHandler := service.NewHistorySyncHandler(zLogger, waProducer)
 	receiptHandler := service.NewReceiptHandler(zLogger, waProducer)
@@ -121,8 +131,10 @@ func main() {
 	workerCtx, workerCancel := context.WithCancel(context.Background())
 	defer workerCancel()
 
-	waWorker.Start(workerCtx, "whatsapp_fast_lane", 5)
-	waWorker.Start(workerCtx, "whatsapp_standard_lane", 20)
+	mediaIngestSvc.StartRetryWorker(workerCtx)
+
+	waWorker.StartWithPrefetch(workerCtx, "whatsapp_fast_lane", 15, 10, true)
+	waWorker.StartWithPrefetch(workerCtx, "whatsapp_standard_lane", 3, 1, false)
 	waWorker.StartGroupWorker(workerCtx, "whatsapp_group_create", 2)
 
 	waHandler := handler.NewWhatsAppHandler(waService, zLogger)

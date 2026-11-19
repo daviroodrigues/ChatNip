@@ -14,7 +14,12 @@ import (
 	"time"
 )
 
-const MaxRetries = 5
+const (
+	MaxRetries           = 5
+	FastPresenceMaxAge   = 10 * time.Second
+	FastLaneExecTimeout  = 15 * time.Second
+	FastLaneMediaTimeout = 10 * time.Minute
+)
 
 type WhatsAppWorker struct {
 	svc     *service.WhatsAppService
@@ -43,7 +48,16 @@ func NewWhatsAppWorker(svc *service.WhatsAppService, adapter *queue.RabbitMQAdap
 }
 
 func (w *WhatsAppWorker) Start(ctx context.Context, queueName string, workerCount int) {
-	msgs, err := w.adapter.Consume(queueName)
+	isFast := queueName == "whatsapp_fast_lane"
+	prefetch := 10
+	if !isFast {
+		prefetch = 1
+	}
+	w.StartWithPrefetch(ctx, queueName, workerCount, prefetch, isFast)
+}
+
+func (w *WhatsAppWorker) StartWithPrefetch(ctx context.Context, queueName string, workerCount int, prefetch int, isFastLane bool) {
+	msgs, err := w.adapter.ConsumeWithPrefetch(queueName, prefetch)
 	if err != nil {
 		w.logger.Fatal().Err(err).Str("queue", queueName).Msg("Failed to consume from queue")
 	}
@@ -63,22 +77,78 @@ func (w *WhatsAppWorker) Start(ctx context.Context, queueName string, workerCoun
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			w.processMessages(ctx, msgs, workerID)
+			w.processMessages(ctx, msgs, workerID, isFastLane)
 			w.logger.Warn().Int("worker_id", workerID).Msg("Worker stopped consuming")
 		}(i)
 	}
 
 }
 
-func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.Delivery, workerID int) {
-	for d := range msgs {
+func decodeSendMessagePayload(body []byte, isFastLane bool) (domain.SendMessagePayload, time.Time, error) {
+	var env domain.CommandEnvelope
+	if err := json.Unmarshal(body, &env); err == nil && env.CommandType != "" && len(env.Data) > 0 {
 		var payload domain.SendMessagePayload
-		if err := json.Unmarshal(d.Body, &payload); err != nil {
+		if err := json.Unmarshal(env.Data, &payload); err != nil {
+			return payload, time.Time{}, err
+		}
+		if payload.CorrelationID == "" {
+			payload.CorrelationID = env.CorrelationID
+		}
+		if payload.SessionID == "" {
+			payload.SessionID = env.SessionID
+		}
+		if payload.Action == "" {
+			switch env.CommandType {
+			case "message.react":
+				payload.Action = "react"
+			case "message.delete":
+				payload.Action = "delete"
+			case "chat.presence":
+				payload.Action = "presence"
+			case "message.read":
+				payload.Action = "read"
+			}
+		}
+		payload.IsPriority = isFastLane
+		return payload, env.Timestamp, nil
+	}
+
+	var payload domain.SendMessagePayload
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return payload, time.Time{}, err
+	}
+	if isFastLane {
+		payload.IsPriority = true
+	}
+	return payload, time.Time{}, nil
+}
+
+func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.Delivery, workerID int, isFastLane bool) {
+	for d := range msgs {
+		payload, envTimestamp, err := decodeSendMessagePayload(d.Body, isFastLane)
+		if err != nil {
 			w.logger.Error().Err(err).Msg("Invalid message body")
 			if nackErr := d.Reject(false); nackErr != nil {
 				w.logger.Error().Err(nackErr).Msg("Failed to reject invalid message")
 			}
 			continue
+		}
+
+		// Discard stale ephemeral fast-lane commands (e.g. "composing" stuck > 10s).
+		if isFastLane && payload.Action == "presence" {
+			ts := envTimestamp
+			if ts.IsZero() {
+				ts = d.Timestamp
+			}
+			if !ts.IsZero() && time.Since(ts) > FastPresenceMaxAge {
+				w.logger.Debug().
+					Str("session_id", payload.SessionID).
+					Str("correlation_id", payload.CorrelationID).
+					Dur("age", time.Since(ts)).
+					Msg("Discarding expired ephemeral presence command")
+				_ = d.Ack(false)
+				continue
+			}
 		}
 
 		if payload.CorrelationID == "" {
@@ -108,8 +178,21 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 			continue
 		}
 
+		execCtx := ctx
+		var cancel context.CancelFunc
+		if isFastLane {
+			timeout := FastLaneExecTimeout
+			if payload.MediaURL != "" {
+				timeout = FastLaneMediaTimeout
+			}
+			execCtx, cancel = context.WithTimeout(ctx, timeout)
+		}
+
 		ackWrapper := &RabbitMQAcknowledger{Delivery: d}
-		err := w.svc.ProcessBackgroundMessage(ctx, payload, ackWrapper)
+		err = w.svc.ProcessBackgroundMessage(execCtx, payload, ackWrapper)
+		if cancel != nil {
+			cancel()
+		}
 
 		if err != nil {
 			if errors.Is(err, domain.ErrSessionNotFound) {

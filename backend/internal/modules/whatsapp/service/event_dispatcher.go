@@ -76,14 +76,16 @@ func (h *PairSuccessHandler) Handle(ctx context.Context, evt domain.Event, sessi
 }
 
 type MessageHandler struct {
-	logger    zerolog.Logger
-	publisher domain.EventPublisher
+	logger      zerolog.Logger
+	publisher   domain.EventPublisher
+	mediaIngest *MediaIngestService
 }
 
-func NewMessageHandler(logger zerolog.Logger, publisher domain.EventPublisher) *MessageHandler {
+func NewMessageHandler(logger zerolog.Logger, publisher domain.EventPublisher, mediaIngest *MediaIngestService) *MessageHandler {
 	return &MessageHandler{
-		logger:    logger,
-		publisher: publisher,
+		logger:      logger,
+		publisher:   publisher,
+		mediaIngest: mediaIngest,
 	}
 }
 
@@ -100,12 +102,23 @@ func (h *MessageHandler) Handle(ctx context.Context, evt domain.Event, sessionID
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
+	if e.RawMedia != nil && h.mediaIngest != nil {
+		h.logger.Info().
+			Str("session_id", sessionID).
+			Str("message_id", e.ID).
+			Str("media_type", e.RawMedia.MediaType).
+			Msg("Incoming media detected, starting disk download & presigned PUT pipeline")
+		h.mediaIngest.IngestIncomingMedia(ctx, e)
+		return
+	}
+
 	h.logger.Info().
 		Str("session_id", sessionID).
 		Str("sender", e.SenderJID).
 		Msg("Message received, publishing to queue")
 
-	err := h.publisher.Publish(ctx, "msg.receive", e)
+	envelope := domain.NewEventEnvelope("message.received", e.ID, tenantID, sessionID, e)
+	err := h.publisher.Publish(ctx, "whatsapp.message.received", envelope)
 	if err != nil {
 		h.logger.Error().Err(err).
 			Str("session_id", sessionID).
@@ -143,7 +156,8 @@ func (h *HistorySyncHandler) Handle(ctx context.Context, evt domain.Event, sessi
 	for _, msg := range e.Messages {
 		msg.SessionID = sessionID
 		msg.TenantID = tenantID
-		_ = h.publisher.Publish(ctx, "msg.receive", msg)
+		envelope := domain.NewEventEnvelope("message.received", msg.ID, tenantID, sessionID, msg)
+		_ = h.publisher.Publish(ctx, "whatsapp.message.received", envelope)
 	}
 }
 
@@ -169,11 +183,7 @@ func (h *ReceiptHandler) Handle(ctx context.Context, evt domain.Event, sessionID
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
-	envelope := map[string]interface{}{
-		"event_type": "message.status",
-		"timestamp":  time.Now(),
-		"data":       e,
-	}
+	envelope := domain.NewEventEnvelope("message.status", "", tenantID, sessionID, e)
 
 	err := h.publisher.Publish(ctx, "whatsapp.message.status", envelope)
 	if err != nil {
@@ -210,11 +220,7 @@ func (h *ChatPresenceHandler) Handle(ctx context.Context, evt domain.Event, sess
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
-	envelope := map[string]interface{}{
-		"event_type": "chat.presence",
-		"timestamp":  time.Now(),
-		"data":       e,
-	}
+	envelope := domain.NewEventEnvelope("chat.presence", "", tenantID, sessionID, e)
 
 	if err := h.publisher.Publish(ctx, "whatsapp.chat.presence", envelope); err != nil {
 		h.logger.Error().Err(err).Str("session_id", sessionID).Msg("Failed to publish chat presence to RabbitMQ")
@@ -242,11 +248,7 @@ func (h *CallOfferHandler) Handle(ctx context.Context, evt domain.Event, session
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
-	envelope := map[string]interface{}{
-		"event_type": "call.received",
-		"timestamp":  time.Now(),
-		"data":       e,
-	}
+	envelope := domain.NewEventEnvelope("call.received", "", tenantID, sessionID, e)
 
 	if err := h.publisher.Publish(ctx, "whatsapp.call.received", envelope); err != nil {
 		h.logger.Error().Err(err).Str("session_id", sessionID).Msg("Failed to publish call offer to RabbitMQ")
@@ -274,11 +276,7 @@ func (h *UndecryptableMessageHandler) Handle(ctx context.Context, evt domain.Eve
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
-	envelope := map[string]interface{}{
-		"event_type": "message.undecryptable",
-		"timestamp":  time.Now(),
-		"data":       e,
-	}
+	envelope := domain.NewEventEnvelope("message.undecryptable", "", tenantID, sessionID, e)
 
 	if err := h.publisher.Publish(ctx, "whatsapp.message.undecryptable", envelope); err != nil {
 		h.logger.Error().Err(err).Str("session_id", sessionID).Msg("Failed to publish undecryptable message event")
@@ -306,11 +304,7 @@ func (h *GroupInfoHandler) Handle(ctx context.Context, evt domain.Event, session
 	e.SessionID = sessionID
 	e.TenantID = tenantID
 
-	envelope := map[string]interface{}{
-		"event_type": "group.updated",
-		"timestamp":  time.Now(),
-		"data":       e,
-	}
+	envelope := domain.NewEventEnvelope("group.updated", "", tenantID, sessionID, e)
 
 	if err := h.publisher.Publish(ctx, "whatsapp.group.updated", envelope); err != nil {
 		h.logger.Error().Err(err).Str("session_id", sessionID).Msg("Failed to publish group info event")

@@ -34,7 +34,7 @@ func NewWhatsAppProducer(adapter *queue.RabbitMQAdapter) *WhatsAppEventProducer 
 		panic(fmt.Errorf("failed to setup queue whatsapp_standard_lane: %w", err))
 	}
 
-	if err := adapter.SetupQueue("whatsapp_incoming_messages", "msg.receive", nil); err != nil {
+	if err := adapter.SetupQueue("whatsapp_incoming_messages", "whatsapp.message.received", nil); err != nil {
 		panic(fmt.Errorf("failed to setup queue whatsapp_incoming_messages: %w", err))
 	}
 

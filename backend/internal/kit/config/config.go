@@ -6,13 +6,16 @@ import (
 )
 
 type Config struct {
-	Port          string
-	InternalKey   string
-	DBPath        string
-	APIVersion    string
-	Environment   string
-	RabbitURL     string
-	EncryptionKey string
+	Port               string
+	InternalKey        string
+	DBPath             string
+	APIVersion         string
+	Environment        string
+	RabbitURL          string
+	EncryptionKey      string
+	BackendURL         string
+	BackendInternalKey string
+	MediaTempDir       string
 }
 
 func Load() *Config {
@@ -24,13 +27,21 @@ func Load() *Config {
 		return val
 	}
 
+	mediaTempDir := os.Getenv("MEDIA_TEMP_DIR")
+	if mediaTempDir == "" {
+		mediaTempDir = os.TempDir()
+	}
+
 	return &Config{
-		Port:          requireEnv("WHATSAPP_GO_PORT"),
-		InternalKey:   requireEnv("WHATSAPP_GO_INTERNAL_KEY"),
-		DBPath:        requireEnv("WHATSAPP_GO_DB_PATH"),
-		APIVersion:    requireEnv("WHATSAPP_GO_API_VERSION"),
-		Environment:   requireEnv("ENVIRONMENT"),
-		RabbitURL:     requireEnv("RABBITMQ_URL"),
-		EncryptionKey: requireEnv("WHATSAPP_GO_ENCRYPTION_KEY"),
+		Port:               requireEnv("WHATSAPP_GO_PORT"),
+		InternalKey:        requireEnv("WHATSAPP_GO_INTERNAL_KEY"),
+		DBPath:             requireEnv("WHATSAPP_GO_DB_PATH"),
+		APIVersion:         requireEnv("WHATSAPP_GO_API_VERSION"),
+		Environment:        requireEnv("ENVIRONMENT"),
+		RabbitURL:          requireEnv("RABBITMQ_URL"),
+		EncryptionKey:      requireEnv("WHATSAPP_GO_ENCRYPTION_KEY"),
+		BackendURL:         os.Getenv("BACKEND_API_URL"),
+		BackendInternalKey: os.Getenv("BACKEND_INTERNAL_API_KEY"),
+		MediaTempDir:       mediaTempDir,
 	}
 }

@@ -74,3 +74,48 @@ func TestNormalizeTargetJID(t *testing.T) {
 		}
 	})
 }
+
+func TestDecodeSendMessagePayload(t *testing.T) {
+	t.Run("decodes standardized CommandEnvelope and maps command_type", func(t *testing.T) {
+		body := []byte(`{
+			"schema_version": "1.0",
+			"command_type": "message.react",
+			"correlation_id": "corr-123",
+			"timestamp": "2026-11-18T23:00:00Z",
+			"session_id": "sess-1",
+			"data": {
+				"jid": "5511999999999@s.whatsapp.net",
+				"target_msg_id": "msg-999",
+				"reaction": "👍"
+			}
+		}`)
+
+		payload, ts, err := decodeSendMessagePayload(body, true)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payload.CorrelationID != "corr-123" || payload.SessionID != "sess-1" {
+			t.Fatalf("unexpected ids: %+v", payload)
+		}
+		if payload.Action != "react" {
+			t.Fatalf("expected action react, got %q", payload.Action)
+		}
+		if !payload.IsPriority {
+			t.Fatal("expected IsPriority to be true on fast lane")
+		}
+		if ts.IsZero() {
+			t.Fatal("expected envelope timestamp to be parsed")
+		}
+	})
+
+	t.Run("decodes legacy flat SendMessagePayload", func(t *testing.T) {
+		body := []byte(`{"correlation_id":"c1","session_id":"s1","jid":"5511888888888@s.whatsapp.net","message":"oi"}`)
+		payload, _, err := decodeSendMessagePayload(body, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payload.CorrelationID != "c1" || payload.Text != "oi" || payload.IsPriority {
+			t.Fatalf("unexpected payload: %+v", payload)
+		}
+	})
+}

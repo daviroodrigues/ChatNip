@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"os"
 	"time"
 )
 
@@ -26,6 +27,9 @@ type MediaMessageInput struct {
 	Type              string
 	Caption           string
 	MediaData         []byte
+	MediaFilePath     string
+	MediaFileSize     int64
+	MimeType          string
 	FileName          string
 	IsPTT             bool
 	IsGIF             bool
@@ -93,6 +97,7 @@ type WhatsAppClient interface {
 	AppStateSync
 	ChannelManager
 	RegisterHandler(handler EventHandler)
+	DownloadMediaToFile(ctx context.Context, desc WhatsAppMediaDescriptor, destFile *os.File) error
 }
 
 type EventHandler func(evt interface{})

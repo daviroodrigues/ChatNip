@@ -106,7 +106,7 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 				messageID = msgToRead
 
 			default:
-				if payload.MediaURL != "" && len(mediaData) > 0 {
+				if payload.MediaURL != "" && (len(mediaData) > 0 || payload.MediaFilePath != "") {
 					finalDuration := payload.Duration
 					finalWaveform := payload.Waveform
 
@@ -126,6 +126,9 @@ func (e *HSEMExecutor) Execute(ctx context.Context, client whatsappDomain.Messen
 						Type:              payload.MediaType,
 						Caption:           payload.Text,
 						MediaData:         mediaData,
+						MediaFilePath:     payload.MediaFilePath,
+						MediaFileSize:     payload.MediaFileSize,
+						MimeType:          payload.MediaMimeType,
 						FileName:          payload.FileName,
 						IsPTT:             payload.IsPTT,
 						IsGIF:             payload.IsGIF,

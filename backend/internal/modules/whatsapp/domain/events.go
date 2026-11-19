@@ -34,21 +34,45 @@ type LoggedOutEvent struct {
 
 func (e LoggedOutEvent) EventType() EventType { return TypeLoggedOut }
 
+type MediaAttachment struct {
+	MediaID    string `json:"media_id,omitempty"`
+	MediaType  string `json:"media_type"`
+	Mimetype   string `json:"mimetype,omitempty"`
+	FileLength uint64 `json:"file_length,omitempty"`
+	FileName   string `json:"file_name,omitempty"`
+	Status     string `json:"status,omitempty"` // "ready", "failed"
+}
+
+// WhatsAppMediaDescriptor holds the raw whatsmeow download pointers needed to
+// download and retry media before Meta's DirectPath/MediaKey expire.
+type WhatsAppMediaDescriptor struct {
+	MediaType     string
+	Mimetype      string
+	DirectPath    string
+	MediaKey      []byte
+	FileEncSHA256 []byte
+	FileSHA256    []byte
+	FileLength    uint64
+	FileName      string
+}
+
 type MessageEvent struct {
-	ID           string    `json:"id"`
-	SessionID    string    `json:"session_id"`
-	TenantID     string    `json:"tenant_id"`
-	ChatJID      string    `json:"chat_jid,omitempty"`
-	SenderJID    string    `json:"sender_jid"`
-	SenderAltJID string    `json:"sender_alt_jid,omitempty"`
-	SenderPhone  string    `json:"sender_phone,omitempty"`
-	IsGroup      bool      `json:"is_group,omitempty"`
-	PushName     string    `json:"push_name"`
-	Text         string    `json:"text"`
-	IsFromMe     bool      `json:"is_from_me"`
-	Timestamp    time.Time `json:"timestamp"`
-	MediaType    string    `json:"media_type,omitempty"`
-	MediaURL     string    `json:"media_url,omitempty"`
+	ID           string                   `json:"id"`
+	SessionID    string                   `json:"session_id"`
+	TenantID     string                   `json:"tenant_id"`
+	ChatJID      string                   `json:"chat_jid,omitempty"`
+	SenderJID    string                   `json:"sender_jid"`
+	SenderAltJID string                   `json:"sender_alt_jid,omitempty"`
+	SenderPhone  string                   `json:"sender_phone,omitempty"`
+	IsGroup      bool                     `json:"is_group,omitempty"`
+	PushName     string                   `json:"push_name"`
+	Text         string                   `json:"text"`
+	IsFromMe     bool                     `json:"is_from_me"`
+	Timestamp    time.Time                `json:"timestamp"`
+	MediaType    string                   `json:"media_type,omitempty"`
+	MediaURL     string                   `json:"media_url,omitempty"`
+	Media        *MediaAttachment         `json:"media,omitempty"`
+	RawMedia     *WhatsAppMediaDescriptor `json:"-"`
 }
 
 func (e MessageEvent) EventType() EventType { return TypeMessage }
