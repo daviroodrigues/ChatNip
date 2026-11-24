@@ -37,8 +37,8 @@ import (
 // @contact.name   ChatNip Engineering
 // @contact.url    https://github.com/daviroodrigues/ChatNip
 
-// @license.name  MIT
-// @license.url   https://opensource.org/licenses/MIT
+// @license.name  AGPL-3.0
+// @license.url   https://www.gnu.org/licenses/agpl-3.0.html
 
 // @BasePath  /
 
