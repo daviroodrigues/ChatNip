@@ -13,7 +13,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	go.mau.fi/whatsmeow v0.0.0-20261110152934-c88388f983b4
 	golang.org/x/crypto v0.59.0
-	golang.org/x/image v0.36.0
+	golang.org/x/image v0.41.0
 	golang.org/x/net v0.62.0
 	google.golang.org/protobuf v1.36.12
 )
