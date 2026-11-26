@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"math/rand/v2"
 	"time"
 )
@@ -31,12 +32,43 @@ func (m *MathUtils) GaussianDuration(meanMs float64, variancePct float64) time.D
 	return time.Duration(val) * time.Millisecond
 }
 
+func (m *MathUtils) LogNormalDuration(medianMs float64, sigma float64, minDur, maxDur time.Duration) time.Duration {
+	if medianMs <= 0 {
+		return minDur
+	}
+	if sigma <= 0 {
+		sigma = 0.25
+	}
+	z := rand.NormFloat64()
+	if z > 2.5 {
+		z = 2.5
+	} else if z < -2.5 {
+		z = -2.5
+	}
+	valMs := medianMs * math.Exp(sigma*z)
+	dur := time.Duration(valMs) * time.Millisecond
+	if minDur > 0 && dur < minDur {
+		return minDur
+	}
+	if maxDur > 0 && dur > maxDur {
+		return maxDur
+	}
+	return dur
+}
+
 func (m *MathUtils) UniformDuration(min, max time.Duration) time.Duration {
 	delta := int64(max - min)
 	if delta <= 0 {
 		return min
 	}
 	return min + time.Duration(rand.Int64N(delta))
+}
+
+func (m *MathUtils) UniformFloat(min, max float64) float64 {
+	if max <= min {
+		return min
+	}
+	return min + rand.Float64()*(max-min)
 }
 
 func (m *MathUtils) ExponentialDuration(min, max time.Duration) time.Duration {

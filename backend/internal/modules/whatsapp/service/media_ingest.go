@@ -135,8 +135,6 @@ func (s *MediaIngestService) IngestIncomingMedia(ctx context.Context, evt domain
 		return
 	}
 
-	// Download immediately in background so Meta's DirectPath/MediaKey do not expire
-	// while keeping the whatsmeow event loop non-blocking.
 	go s.processJob(context.Background(), job)
 }
 

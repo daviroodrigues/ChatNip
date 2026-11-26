@@ -125,6 +125,8 @@ func main() {
 		waProducer,
 		downloader,
 	)
+	hsemStateStore := persistence.NewSQLiteHSEMStateStore(dbConn)
+	waService.SetHSEMStateStore(hsemStateStore)
 
 	go waService.RestoreSessions()
 
@@ -157,7 +159,6 @@ func main() {
 
 	r.Get("/health", healthHandler.Check)
 
-	// Swagger documentation
 	r.Get("/swagger", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/swagger/index.html", http.StatusMovedPermanently)
 	})
@@ -166,10 +167,8 @@ func main() {
 	})
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	// Auth & API Key generation (requires X-Internal-Key)
 	authHandler.RegisterRoutes(r, cfg.APIVersion, cfg.InternalKey)
 
-	// WhatsApp API routes (authenticated via X-API-Key or Bearer token)
 	waHandler.RegisterRoutes(r, cfg, authStore)
 
 	srv := server.New(cfg.Port, r)

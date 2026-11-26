@@ -14,15 +14,23 @@ const (
 )
 
 type SimulationInput struct {
-	Persona         PersonaType
-	MessageType     MessageType
-	InputTextLength int
-	OutputText      string
-	MediaDuration   time.Duration
-	FileSizeKB      int
-	CurrentTime     time.Time
-	CurrentFatigue  float64
-	ConsecutiveMsgs int
+	Persona              PersonaType
+	MessageType          MessageType
+	InputTextLength      int
+	OutputText           string
+	MediaDuration        time.Duration
+	FileSizeKB           int
+	CurrentTime          time.Time
+	CurrentFatigue       float64
+	ConsecutiveMsgs      int
+	PersonalSpeedFactor  float64
+	BandwidthKBps        float64
+	CircadianOffset      time.Duration
+	InSleepWindow        bool
+	ConversationWarmth   float64
+	WasOffline           bool
+	SkipMarkAsRead       bool
+	BatchReadingOverhead time.Duration
 }
 
 type StepType string

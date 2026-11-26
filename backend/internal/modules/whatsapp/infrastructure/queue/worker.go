@@ -136,7 +136,6 @@ func (w *WhatsAppWorker) processMessages(ctx context.Context, msgs <-chan amqp.D
 			continue
 		}
 
-		// Discard stale ephemeral fast-lane commands (e.g. "composing" stuck > 10s).
 		if isFastLane && payload.Action == "presence" {
 			ts := envTimestamp
 			if ts.IsZero() {

@@ -24,19 +24,17 @@ type ArgonParams struct {
 }
 
 var DefaultArgonParams = &ArgonParams{
-	Memory:      64 * 1024, // 64 MB
+	Memory:      64 * 1024,
 	Iterations:  1,
 	Parallelism: 2,
 	SaltLength:  16,
 	KeyLength:   32,
 }
 
-// HashWithArgon hashes a plaintext string using Argon2id with default parameters
 func HashWithArgon(plaintext string) (string, error) {
 	return HashWithArgonCustom(plaintext, DefaultArgonParams)
 }
 
-// HashWithArgonCustom hashes a plaintext string using specified Argon2id parameters
 func HashWithArgonCustom(plaintext string, p *ArgonParams) (string, error) {
 	salt := make([]byte, p.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
@@ -52,7 +50,6 @@ func HashWithArgonCustom(plaintext string, p *ArgonParams) (string, error) {
 	return encoded, nil
 }
 
-// VerifyWithArgon compares a plaintext string against an encoded Argon2id hash
 func VerifyWithArgon(plaintext, encodedHash string) (bool, error) {
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 {

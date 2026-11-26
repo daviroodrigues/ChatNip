@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# --- CORES ---
-# Importa do common.sh se disponível, senão define fallback
 if [ -z "$GREEN" ]; then
     BOLD=$'\033[1m'
     BLUE=$'\033[0;34m'
@@ -13,13 +11,9 @@ if [ -z "$GREEN" ]; then
     NC=$'\033[0m'
 fi
 
-# --- HELPERS ---
 ui::_strip_colors() {
-    # Remove caracteres de controle ANSI
     echo "$1" | sed "s/$(echo -e '\033')\[[0-9;]*m//g"
 }
-
-# --- COMPONENTES UI ---
 
 ui::header() {
     clear

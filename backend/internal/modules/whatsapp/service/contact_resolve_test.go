@@ -206,8 +206,6 @@ func TestExecuteBurstStepIsPureConsumer(t *testing.T) {
 		client := &mockWhatsAppClient{loggedIn: true}
 		svc := newTestWhatsAppService(&mockClientRepo{clients: map[string]domain.WhatsAppClient{"s1": client}})
 
-		// Use reaction action to keep test fast (300ms) while still verifying no IsOnWhatsApp call,
-		// and also test a direct text execution via HSEMExecutor directly.
 		payload := domain.SendMessagePayload{
 			SessionID: "s1",
 			RemoteJID: "553499998888@s.whatsapp.net",

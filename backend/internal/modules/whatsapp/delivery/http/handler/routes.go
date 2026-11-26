@@ -12,7 +12,6 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 	r.Route(router.ApiPath(cfg.APIVersion, ""), func(r chi.Router) {
 		r.Use(middleware.ApiKeyAuth(keyValidator, cfg.InternalKey))
 
-		// Auth & Sessions
 		r.Post("/login", apierrors.APIHandler(h.handleLogin).ServeHTTP)
 		r.Post("/login/pair-code", apierrors.APIHandler(h.handleLoginPairCode).ServeHTTP)
 		r.Post("/logout", apierrors.APIHandler(h.handleLogout).ServeHTTP)
@@ -21,7 +20,6 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 		r.Put("/proxy", apierrors.APIHandler(h.handleUpdateProxy).ServeHTTP)
 		r.Post("/proxy/validate", apierrors.APIHandler(h.handleValidateProxy).ServeHTTP)
 
-		// Messages (Queue & HSEM)
 		r.Post("/send", apierrors.APIHandler(h.handleSend).ServeHTTP)
 		r.Post("/sendGroupMessage", apierrors.APIHandler(h.handleSend).ServeHTTP)
 		r.Post("/messages/edit", apierrors.APIHandler(h.handleEditMessage).ServeHTTP)
@@ -29,10 +27,8 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 		r.Post("/messages/revoke", apierrors.APIHandler(h.handleRevokeMessage).ServeHTTP)
 		r.Post("/messages/read", apierrors.APIHandler(h.handleReadMessage).ServeHTTP)
 
-		// Status / Stories (Humanized Queue)
 		r.Post("/status/send", apierrors.APIHandler(h.handleSendStatus).ServeHTTP)
 
-		// Groups
 		r.Post("/groups", apierrors.APIHandler(h.handleCreateGroup).ServeHTTP)
 		r.Get("/groups", apierrors.APIHandler(h.handleListGroups).ServeHTTP)
 		r.Get("/groups/{jid}", apierrors.APIHandler(h.handleGetGroupInfo).ServeHTTP)
@@ -50,7 +46,6 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 		r.Post("/groups/join", apierrors.APIHandler(h.handleJoinGroup).ServeHTTP)
 		r.Post("/groups/join-invite", apierrors.APIHandler(h.handleJoinGroupInviteMessage).ServeHTTP)
 
-		// Contacts & App State
 		r.Post("/contacts/check", apierrors.APIHandler(h.handleCheckNumbers).ServeHTTP)
 		r.Post("/contacts/resolve", apierrors.APIHandler(h.handleResolveContact).ServeHTTP)
 		r.Get("/contacts", apierrors.APIHandler(h.handleListContacts).ServeHTTP)
@@ -62,7 +57,6 @@ func (h *WhatsAppHandler) RegisterRoutes(r chi.Router, cfg *config.Config, keyVa
 		r.Get("/blocklist", apierrors.APIHandler(h.handleGetBlocklist).ServeHTTP)
 		r.Post("/blocklist", apierrors.APIHandler(h.handleUpdateBlocklist).ServeHTTP)
 
-		// Channels / Newsletters
 		r.Post("/channels", apierrors.APIHandler(h.handleCreateChannel).ServeHTTP)
 		r.Get("/channels", apierrors.APIHandler(h.handleListChannels).ServeHTTP)
 		r.Post("/channels/{jid}/send", apierrors.APIHandler(h.handleSendChannelMessage).ServeHTTP)

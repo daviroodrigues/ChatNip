@@ -62,13 +62,19 @@ func NewSQLiteConnection(dbPath string) (*sql.DB, error) {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
-	CREATE INDEX IF NOT EXISTS idx_media_ingest_jobs_status_retry ON media_ingest_jobs (status, next_retry_at);`
+	CREATE INDEX IF NOT EXISTS idx_media_ingest_jobs_status_retry ON media_ingest_jobs (status, next_retry_at);
+	CREATE TABLE IF NOT EXISTS hsem_session_states (
+		session_id TEXT PRIMARY KEY,
+		state_json TEXT NOT NULL,
+		expires_at DATETIME NOT NULL,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_hsem_session_states_expires ON hsem_session_states (expires_at);`
 
 	if _, err := db.Exec(query); err != nil {
 		return nil, err
 	}
 
-	// Graceful migration if table existed without masked_key
 	_, _ = db.Exec(`ALTER TABLE api_keys ADD COLUMN masked_key TEXT NOT NULL DEFAULT ''`)
 
 	return db, nil

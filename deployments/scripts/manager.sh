@@ -66,11 +66,9 @@ ctrl::list_all() {
     declare -A map_size
     declare -A map_origin
 
-    # Scan local directory recursively
     if [ -d "$BACKUP_DIR" ]; then
         while read -r f; do
             [ -z "$f" ] && continue
-            # Relative path from $BACKUP_DIR (e.g. daily/filename or filename)
             rel_path="${f#$BACKUP_DIR/}"
             map_files["$rel_path"]="$rel_path"
             map_size["$rel_path"]=$(du -h "$f" | cut -f1)
@@ -78,7 +76,6 @@ ctrl::list_all() {
         done < <(find "$BACKUP_DIR" -type f \( -name "*.gpg" -o -name "*.enc" -o -name "*.sqlite.gz*" \) | sort -r)
     fi
 
-    # Scan S3 recursively
     local health_raw
     health_raw=$(cloud::check_health)
     if [[ "$health_raw" == online* ]]; then
@@ -101,7 +98,6 @@ ctrl::list_all() {
     if [ "$return_mode" != "quiet" ]; then ui::header; fi
     ui::print_table_header
 
-    # Sort keys
     local sorted_keys=()
     while IFS= read -r k; do
         [ -n "$k" ] && sorted_keys+=("$k")
@@ -167,7 +163,6 @@ ctrl::restore_flow() {
 
     [ -z "$fname" ] && return
 
-    # Check if local exists
     if [ ! -f "$BACKUP_DIR/$fname" ]; then
         ui::info "Arquivo não encontrado localmente. Baixando do S3..."
 

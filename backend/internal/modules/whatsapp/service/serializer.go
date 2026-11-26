@@ -1,23 +1,54 @@
 package service
 
 import (
+	hsemDomain "chatnip/internal/modules/hsem/domain"
+	hsemService "chatnip/internal/modules/hsem/service"
 	"chatnip/internal/modules/whatsapp/domain"
 	"context"
+	"errors"
+	"math"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-// SessionGate provides preemptive per-session mutual exclusion where fast-lane
-// operations signal fastPending and preempt standard-lane batch execution.
+var ErrPreempted = errors.New("standard-lane step preempted by fast-lane")
+
 type SessionGate struct {
 	mu          sync.Mutex
 	fastPending atomic.Int32
+
+	preemptMu      sync.Mutex
+	standardCancel context.CancelCauseFunc
+}
+
+func (g *SessionGate) RegisterStandardCancel(cancel context.CancelCauseFunc) {
+	g.preemptMu.Lock()
+	g.standardCancel = cancel
+	g.preemptMu.Unlock()
+}
+
+func (g *SessionGate) ClearStandardCancel() {
+	g.preemptMu.Lock()
+	g.standardCancel = nil
+	g.preemptMu.Unlock()
+}
+
+func (g *SessionGate) triggerPreempt() {
+	g.preemptMu.Lock()
+	cancel := g.standardCancel
+	g.preemptMu.Unlock()
+	if cancel != nil {
+		cancel(ErrPreempted)
+	}
 }
 
 func (g *SessionGate) AcquireFast(ctx context.Context) error {
 	g.fastPending.Add(1)
 	defer g.fastPending.Add(-1)
+
+	g.triggerPreempt()
 
 	done := make(chan struct{})
 	go func() {
@@ -40,12 +71,10 @@ func (g *SessionGate) AcquireFast(ctx context.Context) error {
 func (g *SessionGate) AcquireStandard(ctx context.Context) error {
 	for {
 		if g.fastPending.Load() > 0 {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(25 * time.Millisecond):
-				continue
+			if err := sleepWithContext(ctx, jitterDuration(GatePollMin, GatePollMax)); err != nil {
+				return err
 			}
+			continue
 		}
 
 		if g.mu.TryLock() {
@@ -56,10 +85,8 @@ func (g *SessionGate) AcquireStandard(ctx context.Context) error {
 			return nil
 		}
 
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(25 * time.Millisecond):
+		if err := sleepWithContext(ctx, jitterDuration(GatePollMin, GatePollMax)); err != nil {
+			return err
 		}
 	}
 }
@@ -69,12 +96,31 @@ func (g *SessionGate) Release() {
 }
 
 const (
-	ContextSwitchMin  = 2 * time.Second
-	ContextSwitchMax  = 5 * time.Second
-	BurstBufferWindow = 50 * time.Millisecond
+	ContextSwitchRecentMin   = 800 * time.Millisecond
+	ContextSwitchRecentMax   = 2 * time.Second
+	ContextSwitchInactiveMin = 3 * time.Second
+	ContextSwitchInactiveMax = 8 * time.Second
+
+	GatePollMin          = 15 * time.Millisecond
+	GatePollMax          = 45 * time.Millisecond
+	BurstBufferWindowMin = 40 * time.Millisecond
+	BurstBufferWindowMax = 95 * time.Millisecond
+
 	MaxBatchSize      = 5
 	MaxFastLaneStreak = 3
 )
+
+type BurstExecutionOptions struct {
+	IsBurstContinuing    bool
+	WasOffline           bool
+	SkipMarkAsRead       bool
+	BatchReadMsgID       string
+	BatchReadingOverhead time.Duration
+	ConsecutiveMsgs      int
+	ContinuousComposing  *time.Duration
+	ComposingPauseLimit  time.Duration
+	StepCtx              context.Context
+}
 
 type SessionJob struct {
 	Payload      domain.SendMessagePayload
@@ -93,6 +139,20 @@ type SessionWorker struct {
 	LastAction     time.Time
 	FastLaneStreak int
 	Quit           chan struct{}
+	ctx            context.Context
+	cancel         context.CancelFunc
+	stopOnce       sync.Once
+}
+
+func (w *SessionWorker) Stop() {
+	w.stopOnce.Do(func() {
+		if w.cancel != nil {
+			w.cancel()
+		}
+		if w.Quit != nil {
+			close(w.Quit)
+		}
+	})
 }
 
 type SessionSerializer struct {
@@ -104,6 +164,33 @@ type SessionSerializer struct {
 
 func NewSessionSerializer(svc *WhatsAppService) *SessionSerializer {
 	return &SessionSerializer{service: svc}
+}
+
+func (s *SessionSerializer) CancelSession(sessionID string) {
+	if val, ok := s.workers.LoadAndDelete(sessionID); ok {
+		w := val.(*SessionWorker)
+		w.Stop()
+	}
+	if s.service != nil && s.service.stateTracker != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = s.service.stateTracker.Persist(ctx, sessionID)
+	}
+}
+
+func (s *SessionSerializer) Shutdown() {
+	s.workers.Range(func(key, value interface{}) bool {
+		if w, ok := value.(*SessionWorker); ok {
+			w.Stop()
+		}
+		s.workers.Delete(key)
+		return true
+	})
+	if s.service != nil && s.service.stateTracker != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		s.service.stateTracker.PersistAll(ctx)
+	}
 }
 
 func (s *SessionSerializer) getOrCreateGate(sessionID string) *SessionGate {
@@ -150,7 +237,15 @@ func (s *SessionSerializer) executeFast(ctx context.Context, payload domain.Send
 		return err
 	}
 
-	msgID, err := s.service.ExecuteBurstStep(ctx, payload, mediaData, false)
+	wasOffline := false
+	if s.service != nil && s.service.stateTracker != nil {
+		wasOffline = s.service.stateTracker.ConsumeWasOffline(ctx, payload.SessionID)
+	}
+
+	msgID, err := s.service.ExecuteBurstStepWithOpts(ctx, payload, mediaData, BurstExecutionOptions{
+		WasOffline: wasOffline,
+		StepCtx:    ctx,
+	})
 	gate.Release()
 
 	if ack != nil && err == nil {
@@ -196,38 +291,72 @@ func (s *SessionSerializer) getOrCreateWorker(sessionID string) *SessionWorker {
 		return val.(*SessionWorker)
 	}
 
+	workerCtx, workerCancel := context.WithCancel(context.Background())
 	worker := &SessionWorker{
 		ID:            sessionID,
 		FastQueue:     make(chan SessionJob, 50),
 		StandardQueue: make(chan SessionJob, 100),
 		Quit:          make(chan struct{}),
+		ctx:           workerCtx,
+		cancel:        workerCancel,
 	}
+
+	if s.service != nil && s.service.stateTracker != nil {
+		snapshot := s.service.stateTracker.GetOrLoad(workerCtx, sessionID)
+		if snapshot != nil {
+			worker.LastChatJID = snapshot.LastChatJID
+			worker.LastAction = snapshot.LastActionAt
+		}
+	}
+
 	s.workers.Store(sessionID, worker)
 	go s.runWorker(worker)
 	return worker
 }
 
+func (s *SessionSerializer) nextIdleTimeout(w *SessionWorker) time.Duration {
+	if s.service != nil && s.service.stateTracker != nil {
+		return s.service.stateTracker.NextIdleTimeout(w.ctx, w.ID)
+	}
+	return jitterDuration(3*time.Minute, 8*time.Minute)
+}
+
 func (s *SessionSerializer) runWorker(w *SessionWorker) {
-	idleTimer := time.NewTimer(5 * time.Minute)
+	idleTimer := time.NewTimer(s.nextIdleTimeout(w))
 	defer idleTimer.Stop()
 
 	for {
 		job, received := s.pickNextJob(w, idleTimer)
 
 		if !received {
-			if client, ok := s.service.clientRepo.GetClient(w.ID); ok {
-				_ = client.SendGlobalPresence(context.Background(), false)
+			if s.service != nil {
+				if client, ok := s.service.clientRepo.GetClient(w.ID); ok {
+					_ = client.SendGlobalPresence(context.Background(), false)
+				}
+				if s.service.stateTracker != nil {
+					persistCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					s.service.stateTracker.MarkOffline(persistCtx, w.ID)
+					cancel()
+				}
 			}
 			s.workers.Delete(w.ID)
 			return
 		}
 
-		if client, ok := s.service.clientRepo.GetClient(w.ID); ok {
-			_ = client.SendGlobalPresence(context.Background(), true)
+		if s.service != nil {
+			if client, ok := s.service.clientRepo.GetClient(w.ID); ok {
+				_ = client.SendGlobalPresence(context.Background(), true)
+			}
 		}
 
 		batch := s.collectBatch(w, job)
 		s.processBatch(w, batch)
+
+		if s.service != nil && s.service.stateTracker != nil {
+			persistCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_ = s.service.stateTracker.Persist(persistCtx, w.ID)
+			cancel()
+		}
 
 		if !idleTimer.Stop() {
 			select {
@@ -235,7 +364,7 @@ func (s *SessionSerializer) runWorker(w *SessionWorker) {
 			default:
 			}
 		}
-		idleTimer.Reset(5 * time.Minute)
+		idleTimer.Reset(s.nextIdleTimeout(w))
 	}
 }
 
@@ -299,7 +428,7 @@ func (s *SessionSerializer) collectBatch(w *SessionWorker, firstJob SessionJob) 
 		sourceQueue = w.StandardQueue
 	}
 
-	timeout := time.NewTimer(BurstBufferWindow)
+	timeout := time.NewTimer(s.batchWindowDuration())
 	defer timeout.Stop()
 
 LoopColeta:
@@ -323,36 +452,114 @@ LoopColeta:
 	return batch
 }
 
-func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
-	ctx := context.Background()
-	gate := s.getOrCreateGate(w.ID)
-
-	if w.LastChatJID != "" && w.LastChatJID != batch[0].Payload.RemoteJID {
-		delay := s.service.hsemEngine.Math().UniformDuration(ContextSwitchMin, ContextSwitchMax)
-		time.Sleep(delay)
+func (s *SessionSerializer) batchWindowDuration() time.Duration {
+	if s.service != nil && s.service.hsemEngine != nil {
+		return s.service.hsemEngine.Math().UniformDuration(BurstBufferWindowMin, BurstBufferWindowMax)
 	}
-	w.LastChatJID = batch[0].Payload.RemoteJID
+	return jitterDuration(BurstBufferWindowMin, BurstBufferWindowMax)
+}
+
+func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
+	workerCtx := w.ctx
+	if workerCtx == nil {
+		workerCtx = context.Background()
+	}
+	gate := s.getOrCreateGate(w.ID)
+	targetJID := batch[0].Payload.RemoteJID
+
+	if w.LastChatJID != "" && w.LastChatJID != targetJID {
+		var switchDelay time.Duration
+		isRecent := false
+		if s.service != nil && s.service.stateTracker != nil {
+			bc := s.service.stateTracker.Inspect(workerCtx, w.ID, targetJID, false)
+			isRecent = bc.TargetChatRecent
+		}
+		if isRecent {
+			switchDelay = s.service.hsemEngine.Math().UniformDuration(ContextSwitchRecentMin, ContextSwitchRecentMax)
+		} else {
+			switchDelay = s.service.hsemEngine.Math().UniformDuration(ContextSwitchInactiveMin, ContextSwitchInactiveMax)
+		}
+		if err := sleepWithContext(workerCtx, switchDelay); err != nil {
+			for _, job := range batch {
+				job.Result <- err
+				close(job.Result)
+			}
+			return
+		}
+	}
+	w.LastChatJID = targetJID
+
+	wasOffline := false
+	if s.service != nil && s.service.stateTracker != nil {
+		wasOffline = s.service.stateTracker.ConsumeWasOffline(workerCtx, w.ID)
+	}
+
+	batchReadMsgID, batchReadOverhead := computeBatchMarkAsRead(batch)
+
+	var continuousComposing time.Duration
+	composingLimit := s.service.hsemEngine.Math().UniformDuration(
+		hsemDomain.MaxContinuousComposingMin,
+		hsemDomain.MaxContinuousComposingMax,
+	)
 
 	for i, job := range batch {
 		isLast := i == len(batch)-1
 
 		if i > 0 {
 			microDelay := s.service.hsemEngine.Math().UniformDuration(200*time.Millisecond, 600*time.Millisecond)
-			time.Sleep(microDelay)
+			if err := sleepWithContext(workerCtx, microDelay); err != nil {
+				job.Result <- err
+				close(job.Result)
+				continue
+			}
 		}
 
-		if err := gate.AcquireStandard(ctx); err != nil {
-			job.Result <- err
-			close(job.Result)
-			continue
+		opts := BurstExecutionOptions{
+			IsBurstContinuing:    !isLast,
+			WasOffline:           wasOffline && i == 0,
+			SkipMarkAsRead:       len(batch) > 1 && i > 0 && batchReadMsgID != "",
+			BatchReadMsgID:       "",
+			BatchReadingOverhead: 0,
+			ConsecutiveMsgs:      i + 1,
+			ContinuousComposing:  &continuousComposing,
+			ComposingPauseLimit:  composingLimit,
+		}
+		if i == 0 && len(batch) > 1 && batchReadMsgID != "" {
+			opts.BatchReadMsgID = batchReadMsgID
+			opts.BatchReadingOverhead = batchReadOverhead
 		}
 
-		msgID, err := s.service.ExecuteBurstStep(ctx, job.Payload, job.MediaData, !isLast)
-		gate.Release()
+		var msgID string
+		var err error
+		for {
+			if acqErr := gate.AcquireStandard(workerCtx); acqErr != nil {
+				err = acqErr
+				break
+			}
+
+			stepCtx, stepCancel := context.WithCancelCause(workerCtx)
+			gate.RegisterStandardCancel(stepCancel)
+			opts.StepCtx = stepCtx
+
+			msgID, err = s.service.ExecuteBurstStepWithOpts(workerCtx, job.Payload, job.MediaData, opts)
+
+			gate.ClearStandardCancel()
+			stepCancel(nil)
+			gate.Release()
+
+			if err != nil && errors.Is(context.Cause(stepCtx), ErrPreempted) && workerCtx.Err() == nil {
+				if sleepErr := sleepWithContext(workerCtx, jitterDuration(GatePollMin, GatePollMax)); sleepErr != nil {
+					err = sleepErr
+					break
+				}
+				continue
+			}
+			break
+		}
 
 		if job.Acknowledger != nil {
 			if err == nil {
-				s.publishSentAndAck(ctx, job.Payload, msgID, job.Acknowledger)
+				s.publishSentAndAck(workerCtx, job.Payload, msgID, job.Acknowledger)
 			} else {
 				s.service.logger.Error().Err(err).
 					Str("session_id", job.Payload.SessionID).
@@ -366,3 +573,52 @@ func (s *SessionSerializer) processBatch(w *SessionWorker, batch []SessionJob) {
 		w.LastAction = time.Now()
 	}
 }
+
+func computeBatchMarkAsRead(batch []SessionJob) (latestMsgID string, sublinearOverhead time.Duration) {
+	if len(batch) <= 1 {
+		return "", 0
+	}
+	extraChars := 0
+	for i, job := range batch {
+		id := job.Payload.QuotedMsgID
+		if id == "" {
+			id = job.Payload.TargetMsgID
+		}
+		if id != "" {
+			latestMsgID = id
+		}
+		if i > 0 {
+			extraChars += len([]rune(job.Payload.Text))
+		}
+	}
+	if latestMsgID == "" || extraChars == 0 {
+		return latestMsgID, 0
+	}
+	rawMs := float64(extraChars) * float64(hsemDomain.AvgReadingSpeedMs)
+	sublinearMs := rawMs / math.Pow(float64(len(batch)), 0.35)
+	return latestMsgID, time.Duration(sublinearMs) * time.Millisecond
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return ctx.Err()
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func jitterDuration(min, max time.Duration) time.Duration {
+	delta := int64(max - min)
+	if delta <= 0 {
+		return min
+	}
+	return min + time.Duration(rand.Int64N(delta))
+}
+
+var _ *hsemService.SessionStateTracker

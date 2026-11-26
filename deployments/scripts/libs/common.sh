@@ -1,15 +1,11 @@
 #!/bin/bash
-# Common configuration and helpers for ChatNip scripts
 
-# Resolve repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd)"
 if [ ! -f "$REPO_ROOT/compose.yml" ]; then
-    # Fallback if sourced from different nesting
     REPO_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
 fi
 
-# Load .env if present
 if [ -f "$REPO_ROOT/.env" ]; then
     set -a
     source "$REPO_ROOT/.env"
@@ -24,7 +20,6 @@ elif [ -f "$REPO_ROOT/.env.dev" ]; then
     set +a
 fi
 
-# Terminal colors
 if [ -t 1 ] || [ -n "$FORCE_COLOR" ]; then
     BOLD='\033[1m'
     BLUE='\033[0;34m'

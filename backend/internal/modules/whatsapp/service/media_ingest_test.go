@@ -144,7 +144,6 @@ func TestMediaIngestService_DiskDownloadAndPresignedPut(t *testing.T) {
 		t.Fatalf("unexpected published message event: %+v", env.Data)
 	}
 
-	// Verify temp file was cleaned up
 	matches, _ := filepath.Glob(filepath.Join(tmpDir, "wa_*.bin"))
 	if len(matches) != 0 {
 		t.Fatalf("expected temp files to be cleaned up, found %v", matches)

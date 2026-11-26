@@ -41,11 +41,9 @@ type MediaAttachment struct {
 	Mimetype   string `json:"mimetype,omitempty"`
 	FileLength uint64 `json:"file_length,omitempty"`
 	FileName   string `json:"file_name,omitempty"`
-	Status     string `json:"status,omitempty"` // "ready", "failed"
+	Status     string `json:"status,omitempty"`
 }
 
-// WhatsAppMediaDescriptor holds the raw whatsmeow download pointers needed to
-// download and retry media before Meta's DirectPath/MediaKey expire.
 type WhatsAppMediaDescriptor struct {
 	MediaType     string
 	Mimetype      string
@@ -70,9 +68,9 @@ type MessageEvent struct {
 	Text         string                   `json:"text"`
 	IsFromMe     bool                     `json:"is_from_me"`
 	Timestamp    time.Time                `json:"timestamp"`
-	Action       string                   `json:"action,omitempty"`        // "", "reaction", "revoke", "edit"
-	TargetMsgID  string                   `json:"target_msg_id,omitempty"` // target message ID for reaction/revoke/edit
-	Reaction     string                   `json:"reaction,omitempty"`      // emoji for reaction (empty = removed)
+	Action       string                   `json:"action,omitempty"`
+	TargetMsgID  string                   `json:"target_msg_id,omitempty"`
+	Reaction     string                   `json:"reaction,omitempty"`
 	MediaType    string                   `json:"media_type,omitempty"`
 	MediaURL     string                   `json:"media_url,omitempty"`
 	Media        *MediaAttachment         `json:"media,omitempty"`
@@ -104,8 +102,8 @@ type ChatPresenceEvent struct {
 	TenantID  string    `json:"tenant_id"`
 	ChatJID   string    `json:"chat_jid"`
 	SenderJID string    `json:"sender_jid"`
-	State     string    `json:"state"`           // "composing", "paused"
-	Media     string    `json:"media,omitempty"` // "" (text) or "audio" (recording)
+	State     string    `json:"state"`
+	Media     string    `json:"media,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -149,7 +147,7 @@ type GroupInfoEvent struct {
 	TenantID  string    `json:"tenant_id"`
 	GroupJID  string    `json:"group_jid"`
 	SenderJID string    `json:"sender_jid,omitempty"`
-	Action    string    `json:"action"` // e.g. "update", "join", "leave", "promote", "demote"
+	Action    string    `json:"action"`
 	Timestamp time.Time `json:"timestamp"`
 }
 

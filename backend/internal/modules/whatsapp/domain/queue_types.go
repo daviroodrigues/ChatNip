@@ -8,7 +8,6 @@ import (
 
 const QueueSchemaVersion = "1.0"
 
-// EventEnvelope is the standardized outbound event format published to RabbitMQ.
 type EventEnvelope struct {
 	SchemaVersion string      `json:"schema_version"`
 	EventType     string      `json:"event_type"`
@@ -19,7 +18,6 @@ type EventEnvelope struct {
 	Data          interface{} `json:"data"`
 }
 
-// CommandEnvelope is the standardized inbound command format consumed from RabbitMQ.
 type CommandEnvelope struct {
 	SchemaVersion string          `json:"schema_version"`
 	CommandType   string          `json:"command_type"`
@@ -46,7 +44,7 @@ type SendMessagePayload struct {
 	CorrelationID     string `json:"correlation_id"`
 	SessionID         string `json:"session_id"`
 	RemoteJID         string `json:"jid"`
-	TargetType        string `json:"target_type,omitempty"` // "contact", "group", "status", "newsletter"
+	TargetType        string `json:"target_type,omitempty"`
 	Text              string `json:"message"`
 	IsGroup           bool   `json:"is_group"`
 	IsPriority        bool   `json:"is_priority"`
@@ -69,9 +67,6 @@ type SendMessagePayload struct {
 	MediaMimeType     string `json:"-"`
 }
 
-// IsBroadcastOrChannelTarget reports whether the payload targets WhatsApp Status
-// (status@broadcast) or a Newsletter/Channel (@newsletter), where chat presence
-// and read receipts are not applicable.
 func (p SendMessagePayload) IsBroadcastOrChannelTarget() bool {
 	return p.Action == "status" ||
 		p.TargetType == "status" ||

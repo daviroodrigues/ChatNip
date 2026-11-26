@@ -48,14 +48,12 @@ func NewSQLStore(db *sql.DB) *SQLStore {
 	return &SQLStore{db: db}
 }
 
-// MaskAPIKey produces a safe visual identifier showing the beginning and ending characters.
-// Example: cn_live_4f6a9b1c2d3e4f5a6b7c8d9e0f1a2b3c -> cn_live_4f6a...2b3c
 func MaskAPIKey(rawKey string) string {
 	if len(rawKey) < 16 {
 		return "****"
 	}
-	prefix := rawKey[:12] // "cn_live_XXXX"
-	suffix := rawKey[len(rawKey)-4:] // "XXXX"
+	prefix := rawKey[:12]
+	suffix := rawKey[len(rawKey)-4:]
 	return fmt.Sprintf("%s...%s", prefix, suffix)
 }
 
@@ -65,8 +63,8 @@ func (s *SQLStore) Create(ctx context.Context, name string) (string, *APIKey, er
 		return "", nil, err
 	}
 	rawKey := "cn_live_" + hex.EncodeToString(bytes)
-	keyPrefix := rawKey[:16] // e.g. cn_live_a1b2c3d4 for fast SQL index lookup
-	maskedKey := MaskAPIKey(rawKey) // e.g. cn_live_a1b2...e3f4 for visual identification
+	keyPrefix := rawKey[:16]
+	maskedKey := MaskAPIKey(rawKey)
 
 	idBytes := make([]byte, 8)
 	if _, err := rand.Read(idBytes); err != nil {
@@ -74,7 +72,6 @@ func (s *SQLStore) Create(ctx context.Context, name string) (string, *APIKey, er
 	}
 	id := fmt.Sprintf("key_%s", hex.EncodeToString(idBytes))
 
-	// Hash strictly with Argon2id
 	argonHash, err := HashWithArgon(rawKey)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to hash api key with argon2: %w", err)
@@ -115,7 +112,6 @@ func (s *SQLStore) Validate(ctx context.Context, rawKey string) (bool, error) {
 			return false, err
 		}
 
-		// Verify against Argon2id hash in constant time
 		valid, err := VerifyWithArgon(rawKey, storedHash)
 		if err == nil && valid {
 			return true, nil
@@ -167,7 +163,6 @@ func (s *SQLStore) Revoke(ctx context.Context, id string) error {
 	return nil
 }
 
-// Handler handles API Key management routes authenticated with X-Internal-Key
 type Handler struct {
 	store  Store
 	logger zerolog.Logger
@@ -211,7 +206,7 @@ func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) error {
 	resp := CreateKeyResponse{
 		ID:        key.ID,
 		Name:      key.Name,
-		APIKey:    rawKey, // returned ONLY once upon creation
+		APIKey:    rawKey,
 		MaskedKey: key.MaskedKey,
 		CreatedAt: key.CreatedAt,
 	}
@@ -275,7 +270,6 @@ func (h *Handler) handleRevoke(w http.ResponseWriter, r *http.Request) error {
 
 func (h *Handler) RegisterRoutes(r chi.Router, apiVersion string, internalKey string) {
 	r.Route(router.ApiPath(apiVersion, "/auth/keys"), func(r chi.Router) {
-		// Only internal master key can create, list, and revoke API keys!
 		r.Use(middleware.InternalAuth(internalKey))
 
 		r.Post("/", apierrors.APIHandler(h.handleCreate).ServeHTTP)

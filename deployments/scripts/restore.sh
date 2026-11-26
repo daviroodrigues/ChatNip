@@ -1,18 +1,9 @@
 #!/bin/bash
 set -e
 
-# ==============================================================================
-# ChatNip Restore Script (OpenGPG + GFS Support)
-# Security Policy:
-#   - Private keys are NEVER stored on the server.
-#   - The private key is provided by the operator via terminal/pipe/SSH.
-#   - Any temporary key imported for decryption is wiped immediately on exit.
-# ==============================================================================
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Source shared environment
 source "$SCRIPT_DIR/libs/common.sh" 2>/dev/null || true
 
 BACKUP_DIR="${REPO_ROOT}/volumes/backups"
@@ -38,13 +29,11 @@ TARGET_INPUT="$1"
 GPG_KEY_ARG="$2"
 BACKUP_FILE=""
 
-# Resolve file location (supports direct path, in $BACKUP_DIR, or within GFS subdirectories)
 if [ -f "$TARGET_INPUT" ]; then
     BACKUP_FILE="$TARGET_INPUT"
 elif [ -f "${BACKUP_DIR}/$TARGET_INPUT" ]; then
     BACKUP_FILE="${BACKUP_DIR}/$TARGET_INPUT"
 else
-    # Search within GFS tiers
     FOUND=$(find "$BACKUP_DIR" -type f -name "$(basename "$TARGET_INPUT")" 2>/dev/null | head -n 1)
     if [ -n "$FOUND" ] && [ -f "$FOUND" ]; then
         BACKUP_FILE="$FOUND"
@@ -69,7 +58,6 @@ echo -e "You are about to REPLACE the active WhatsApp database with this backup.
 echo -e "${RED}All current sessions, active messages and state will be overwritten!${NC}"
 echo ""
 
-# If piped or interactive
 if [ "$GPG_KEY_ARG" != "-" ]; then
     read -p "Type 'RESTORE' to proceed: " reply
     if [ "$reply" != "RESTORE" ]; then
@@ -85,24 +73,20 @@ TEMP_GPG_HOME=""
 cleanup() {
     rm -f "$TEMP_DECRYPTED" "$TEMP_DB"
     if [ -n "$TEMP_GPG_HOME" ] && [ -d "$TEMP_GPG_HOME" ]; then
-        # Secure cleanup: shred files and remove directory
         find "$TEMP_GPG_HOME" -type f -exec rm -f {} + 2>/dev/null || true
         rm -rf "$TEMP_GPG_HOME"
     fi
 }
 trap cleanup EXIT
 
-# Decryption Phase
 if [[ "$BACKUP_FILE" == *.gpg ]]; then
     echo -e "${YELLOW}🔐 Backup is OpenGPG encrypted (.gpg).${NC}"
 
-    # Setup isolated ephemeral keyring so nothing stays on the host
     TEMP_GPG_HOME=$(mktemp -d /tmp/chatnip-restore-gpg-XXXXXX)
     chmod 700 "$TEMP_GPG_HOME"
 
     KEY_IMPORTED=false
 
-    # Case 1: Key provided as second argument (file path or '-')
     if [ -n "$GPG_KEY_ARG" ]; then
         if [ "$GPG_KEY_ARG" == "-" ]; then
             echo -e "${CYAN}🔑 Reading private key from STDIN...${NC}"
@@ -115,9 +99,7 @@ if [[ "$BACKUP_FILE" == *.gpg ]]; then
         fi
     fi
 
-    # Case 2: Interactive input if not yet imported
     if [ "$KEY_IMPORTED" = false ]; then
-        # Check if already present in host default keyring
         HOST_HAS_KEY=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec/{print $5; exit}')
         if [ -n "$HOST_HAS_KEY" ]; then
             echo -e "${GREEN}🔑 Secret key found in local environment keyring.${NC}"
@@ -186,14 +168,12 @@ else
     exit 1
 fi
 
-# Decompression Phase
 echo -e "${YELLOW}📦 Decompressing backup archive...${NC}"
 if ! gunzip -c "$RESTORE_SOURCE" > "$TEMP_DB"; then
     echo -e "${RED}❌ Decompression failed.${NC}"
     exit 1
 fi
 
-# SQLite Integrity Verification Phase
 if command -v sqlite3 >/dev/null 2>&1; then
     echo -e "${CYAN}🔍 Verifying SQLite database integrity...${NC}"
     INTEGRITY_CHECK=$(sqlite3 "$TEMP_DB" "PRAGMA quick_check;" 2>&1 || echo "failed")
@@ -204,7 +184,6 @@ if command -v sqlite3 >/dev/null 2>&1; then
     echo -e "${GREEN}✅ Database integrity verified (PRAGMA quick_check: ok).${NC}"
 fi
 
-# Restore Phase to Container
 echo -e "${YELLOW}🛑 Stopping WhatsApp core service (${CONTAINER_APP})...${NC}"
 docker stop "$CONTAINER_APP" 2>/dev/null || true
 

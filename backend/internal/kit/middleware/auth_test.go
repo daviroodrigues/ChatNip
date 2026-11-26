@@ -25,7 +25,6 @@ func TestAuthMiddleware(t *testing.T) {
 	store := auth.NewSQLStore(db)
 	internalKey := "master-secret-123"
 
-	// Create a valid API key
 	rawKey, _, err := store.Create(context.Background(), "Test Client")
 	if err != nil {
 		t.Fatalf("failed to create api key: %v", err)

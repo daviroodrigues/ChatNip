@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Cloud storage interactions via AWS CLI inside chatnip-backup container
-
 cloud::check_health() {
     if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_BACKUP}$"; then
         echo "container_stopped|0"
@@ -35,7 +33,6 @@ cloud::download_file() {
     local dest_dir=$2
     local full_dest="$dest_dir/$s3_rel_path"
 
-    # Ensure target subdirectory exists (e.g. for /backups/daily/...)
     mkdir -p "$(dirname "$full_dest")"
 
     run_aws s3 cp "s3://${S3_BACKUP_BUCKET}/$s3_rel_path" "$full_dest"

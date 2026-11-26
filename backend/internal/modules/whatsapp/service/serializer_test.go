@@ -1,8 +1,11 @@
 package service
 
 import (
+	hsemDomain "chatnip/internal/modules/hsem/domain"
+	hsemService "chatnip/internal/modules/hsem/service"
 	whatsappDomain "chatnip/internal/modules/whatsapp/domain"
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -16,7 +19,6 @@ func TestSessionSerializer_StashedJobFIFO(t *testing.T) {
 	}
 	serializer := &SessionSerializer{}
 
-	// Enqueue jobs for different JIDs in StandardQueue
 	job1 := SessionJob{
 		Payload: whatsappDomain.SendMessagePayload{RemoteJID: "jid_A", Text: "Msg 1"},
 	}
@@ -30,10 +32,8 @@ func TestSessionSerializer_StashedJobFIFO(t *testing.T) {
 	worker.StandardQueue <- job2
 	worker.StandardQueue <- job3
 
-	// Batch collected with firstJob = job1
 	batch := serializer.collectBatch(worker, job1)
 
-	// Since job2 has jid_B != jid_A, batch should only have job1, and job2 should be in worker.stashedJob
 	if len(batch) != 1 {
 		t.Fatalf("expected batch of size 1, got %d", len(batch))
 	}
@@ -44,7 +44,6 @@ func TestSessionSerializer_StashedJobFIFO(t *testing.T) {
 		t.Errorf("expected stashedJob to be jid_B, got %s", worker.stashedJob.Payload.RemoteJID)
 	}
 
-	// Now pickNextJob should return the stashed job (jid_B) first
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
@@ -59,7 +58,6 @@ func TestSessionSerializer_StashedJobFIFO(t *testing.T) {
 		t.Errorf("expected stashedJob to be cleared after pickNextJob")
 	}
 
-	// And the following job should be job3 (jid_A)
 	nextJob2, ok := serializer.pickNextJob(worker, timer)
 	if !ok {
 		t.Fatalf("expected pickNextJob to succeed for job3")
@@ -73,7 +71,6 @@ func TestSessionGate_FastPreemptsStandard(t *testing.T) {
 	gate := &SessionGate{}
 	ctx := context.Background()
 
-	// Fast lane signals pending before standard acquires.
 	if err := gate.AcquireFast(ctx); err != nil {
 		t.Fatalf("AcquireFast failed: %v", err)
 	}
@@ -88,7 +85,6 @@ func TestSessionGate_FastPreemptsStandard(t *testing.T) {
 		close(stdDone)
 	}()
 
-	// Standard must stay blocked while fast holds the gate.
 	select {
 	case <-stdDone:
 		t.Fatal("AcquireStandard should not proceed while fast holds the gate")
@@ -101,5 +97,89 @@ func TestSessionGate_FastPreemptsStandard(t *testing.T) {
 	case <-stdDone:
 	case <-time.After(time.Second):
 		t.Fatal("AcquireStandard did not acquire after fast released")
+	}
+}
+
+func TestSessionGate_FastTriggersStandardPreemption(t *testing.T) {
+	gate := &SessionGate{}
+	ctx := context.Background()
+
+	if err := gate.AcquireStandard(ctx); err != nil {
+		t.Fatalf("AcquireStandard failed: %v", err)
+	}
+
+	stepCtx, stepCancel := context.WithCancelCause(ctx)
+	gate.RegisterStandardCancel(stepCancel)
+
+	fastDone := make(chan error, 1)
+	go func() {
+		err := gate.AcquireFast(ctx)
+		if err == nil {
+			gate.Release()
+		}
+		fastDone <- err
+	}()
+
+	select {
+	case <-stepCtx.Done():
+		if !errors.Is(context.Cause(stepCtx), ErrPreempted) {
+			t.Fatalf("expected ErrPreempted cause, got %v", context.Cause(stepCtx))
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("expected AcquireFast to trigger standard preemption")
+	}
+
+	gate.ClearStandardCancel()
+	gate.Release()
+
+	select {
+	case err := <-fastDone:
+		if err != nil {
+			t.Fatalf("AcquireFast returned error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("AcquireFast did not complete after standard released")
+	}
+}
+
+func TestComputeBatchMarkAsRead(t *testing.T) {
+	batch := []SessionJob{
+		{Payload: whatsappDomain.SendMessagePayload{QuotedMsgID: "msg_1", Text: "Oi"}},
+		{Payload: whatsappDomain.SendMessagePayload{QuotedMsgID: "msg_2", Text: "Tudo bem por ai?"}},
+		{Payload: whatsappDomain.SendMessagePayload{TargetMsgID: "msg_3", Text: "Me avisa quando puder."}},
+	}
+	latestID, overhead := computeBatchMarkAsRead(batch)
+	if latestID != "msg_3" {
+		t.Fatalf("expected latest message ID msg_3, got %q", latestID)
+	}
+	if overhead <= 0 {
+		t.Fatalf("expected positive sublinear reading overhead, got %v", overhead)
+	}
+}
+
+func TestAttenuateBurstPauses_ForcesMicroPauseAfterThreshold(t *testing.T) {
+	svc := &WhatsAppService{
+		hsemEngine: hsemService.NewHSEMEngine(hsemService.NewMathUtils()),
+	}
+
+	steps := []hsemDomain.ActionStep{
+		{Type: hsemDomain.StepStateChange, Timestamp: 0, Metadata: "composing"},
+		{Type: hsemDomain.StepStateChange, Timestamp: 8 * time.Second, Metadata: "paused"},
+		{Type: hsemDomain.StepStateChange, Timestamp: 9 * time.Second, Metadata: "composing"},
+		{Type: hsemDomain.StepStateChange, Timestamp: 16 * time.Second, Metadata: "paused"},
+		{Type: hsemDomain.StepAction, Timestamp: 17 * time.Second, Metadata: "send_message"},
+	}
+
+	var accum time.Duration
+	res := svc.attenuateBurstPauses(steps, &accum, 12*time.Second)
+
+	pausedCount := 0
+	for _, s := range res {
+		if s.Metadata == "paused" {
+			pausedCount++
+		}
+	}
+	if pausedCount != 1 {
+		t.Fatalf("expected exactly 1 forced micro-pause after crossing 12s composing, got %d (%+v)", pausedCount, res)
 	}
 }

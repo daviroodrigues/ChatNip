@@ -36,6 +36,7 @@ type WhatsAppService struct {
 	logger       zerolog.Logger
 	hsemEngine   *hsemService.HSEMEngine
 	hsemExecutor *HSEMExecutor
+	stateTracker *hsemService.SessionStateTracker
 	publisher    domain.EventPublisher
 	downloader   domain.FileDownloader
 	qrStates     sync.Map
@@ -60,11 +61,16 @@ func NewWhatsAppService(
 		logger:       logger,
 		hsemEngine:   hsemService.NewHSEMEngine(mathUtils),
 		hsemExecutor: NewHSEMExecutor(logger),
+		stateTracker: hsemService.NewSessionStateTracker(mathUtils, nil),
 		publisher:    publisher,
 		downloader:   downloader,
 	}
 	svc.serializer = NewSessionSerializer(svc)
 	return svc
+}
+
+func (s *WhatsAppService) SetHSEMStateStore(store hsemDomain.SessionStateStore) {
+	s.stateTracker = hsemService.NewSessionStateTracker(s.hsemEngine.Math(), store)
 }
 
 func (s *WhatsAppService) ProcessBackgroundMessage(ctx context.Context, payload domain.SendMessagePayload, ack domain.Acknowledger) error {
@@ -120,6 +126,14 @@ func (s *WhatsAppService) ProcessBackgroundMessage(ctx context.Context, payload 
 			}
 		}
 
+		if payload.MediaType == "video" && payload.Duration == 0 {
+			probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			if dur, err := media.ProbeMediaDuration(probeCtx, tmpPath); err == nil && dur > 0 {
+				payload.Duration = uint32(dur / time.Second)
+			}
+			cancel()
+		}
+
 		if payload.MediaType == "image" && mimeType == "image/webp" {
 			webpBytes, readErr := os.ReadFile(tmpPath)
 			if readErr == nil {
@@ -140,6 +154,13 @@ func (s *WhatsAppService) ProcessBackgroundMessage(ctx context.Context, payload 
 }
 
 func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.SendMessagePayload, mediaData []byte, isBurstContinuing bool) (string, error) {
+	return s.ExecuteBurstStepWithOpts(ctx, payload, mediaData, BurstExecutionOptions{
+		IsBurstContinuing: isBurstContinuing,
+		StepCtx:           ctx,
+	})
+}
+
+func (s *WhatsAppService) ExecuteBurstStepWithOpts(ctx context.Context, payload domain.SendMessagePayload, mediaData []byte, opts BurstExecutionOptions) (string, error) {
 	client, ok := s.clientRepo.GetClient(payload.SessionID)
 	if !ok {
 		return "", domain.ErrSessionNotFound
@@ -148,18 +169,39 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		return "", errors.New("session not logged in")
 	}
 
-	targetPersona := hsemDomain.PersonaStandard
+	stepCtx := opts.StepCtx
+	if stepCtx == nil {
+		stepCtx = ctx
+	}
+
+	bc := hsemService.BehavioralContext{
+		EffectivePersona:    hsemDomain.PersonaStandard,
+		PersonalSpeedFactor: 1.0,
+		BandwidthKBps:       hsemDomain.DefaultBandwidthKBps,
+	}
 	if payload.IsPriority {
-		targetPersona = hsemDomain.PersonaRushed
+		bc.EffectivePersona = hsemDomain.PersonaRushed
+	}
+	if s.stateTracker != nil {
+		bc = s.stateTracker.Inspect(ctx, payload.SessionID, payload.RemoteJID, payload.IsPriority)
 	}
 
 	input := hsemDomain.SimulationInput{
-		Persona:         targetPersona,
-		InputTextLength: len(payload.Text),
-		OutputText:      payload.Text,
-		CurrentTime:     time.Now(),
-		CurrentFatigue:  0.0,
-		MessageType:     hsemDomain.MsgTypeText,
+		Persona:              bc.EffectivePersona,
+		InputTextLength:      len([]rune(payload.Text)),
+		OutputText:           payload.Text,
+		CurrentTime:          time.Now(),
+		CurrentFatigue:       bc.Fatigue,
+		ConsecutiveMsgs:      opts.ConsecutiveMsgs,
+		MessageType:          hsemDomain.MsgTypeText,
+		PersonalSpeedFactor:  bc.PersonalSpeedFactor,
+		BandwidthKBps:        bc.BandwidthKBps,
+		CircadianOffset:      bc.CircadianOffset,
+		InSleepWindow:        bc.InSleepWindow,
+		ConversationWarmth:   bc.ConversationWarmth,
+		WasOffline:           opts.WasOffline,
+		SkipMarkAsRead:       opts.SkipMarkAsRead,
+		BatchReadingOverhead: opts.BatchReadingOverhead,
 	}
 
 	if len(mediaData) > 0 || payload.MediaFilePath != "" {
@@ -174,12 +216,13 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 			input.MessageType = hsemDomain.MsgTypeImage
 		case "video":
 			input.MessageType = hsemDomain.MsgTypeVideo
+			if payload.Duration > 0 {
+				input.MediaDuration = time.Duration(payload.Duration) * time.Second
+			}
 		case "audio":
-			if payload.IsPTT {
-				input.MessageType = hsemDomain.MsgTypeAudioPTT
-				input.MediaDuration = 5 * time.Second
-			} else {
-				input.MessageType = hsemDomain.MsgTypeAudioPTT
+			input.MessageType = hsemDomain.MsgTypeAudioPTT
+			if payload.Duration > 0 {
+				input.MediaDuration = time.Duration(payload.Duration) * time.Second
 			}
 		case "document":
 			input.MessageType = hsemDomain.MsgTypeDocument
@@ -188,34 +231,93 @@ func (s *WhatsAppService) ExecuteBurstStep(ctx context.Context, payload domain.S
 		}
 	}
 
+	execPayload := payload
+	if opts.BatchReadMsgID != "" {
+		execPayload.QuotedMsgID = opts.BatchReadMsgID
+	}
+
 	if payload.Action == "reaction" || payload.Action == "react" || payload.Action == "revoke" || payload.Action == "delete" || payload.Action == "read" || payload.Action == "mark_read" || payload.Action == "presence" || payload.Action == "reject_call" || payload.IsBroadcastOrChannelTarget() {
-		quickPlan := hsemDomain.FingerprintPlan{
-			TotalDuration: 300 * time.Millisecond,
-			Steps: []hsemDomain.ActionStep{
-				{
-					Type:      hsemDomain.StepAction,
-					Timestamp: 200 * time.Millisecond,
-					Metadata:  "send_message",
-				},
-			},
+		controlPlan := s.hsemEngine.GenerateControlPlan(payload.Action, input)
+		msgID, err := s.hsemExecutor.ExecuteWithPreemption(ctx, stepCtx, client, controlPlan, execPayload, mediaData)
+		if err == nil && s.stateTracker != nil {
+			s.stateTracker.RecordMessageSent(ctx, payload.SessionID, payload.RemoteJID, 0)
 		}
-		return s.hsemExecutor.Execute(ctx, client, quickPlan, payload, mediaData)
+		return msgID, err
 	}
 
 	plan := s.hsemEngine.GenerateFingerprint(input)
 
-	if isBurstContinuing {
-		var optimizedSteps []hsemDomain.ActionStep
-		for _, step := range plan.Steps {
-			if step.Metadata == "paused" {
-				continue
-			}
-			optimizedSteps = append(optimizedSteps, step)
-		}
-		plan.Steps = optimizedSteps
+	if opts.IsBurstContinuing {
+		plan.Steps = s.attenuateBurstPauses(plan.Steps, opts.ContinuousComposing, opts.ComposingPauseLimit)
+	} else if opts.ContinuousComposing != nil {
+		*opts.ContinuousComposing = 0
 	}
 
-	return s.hsemExecutor.Execute(ctx, client, plan, payload, mediaData)
+	msgID, err := s.hsemExecutor.ExecuteWithPreemption(ctx, stepCtx, client, plan, execPayload, mediaData)
+	if err == nil && s.stateTracker != nil {
+		s.stateTracker.RecordMessageSent(ctx, payload.SessionID, payload.RemoteJID, len([]rune(payload.Text)))
+	}
+	return msgID, err
+}
+
+func (s *WhatsAppService) attenuateBurstPauses(steps []hsemDomain.ActionStep, continuousComposing *time.Duration, pauseLimit time.Duration) []hsemDomain.ActionStep {
+	if pauseLimit <= 0 {
+		pauseLimit = 13 * time.Second
+	}
+	var localAccum time.Duration
+	if continuousComposing != nil {
+		localAccum = *continuousComposing
+	}
+
+	optimized := make([]hsemDomain.ActionStep, 0, len(steps))
+	var composingStart time.Duration
+	inComposing := false
+	var extraShift time.Duration
+
+	for _, step := range steps {
+		adjusted := step
+		adjusted.Timestamp += extraShift
+
+		switch step.Metadata {
+		case "composing":
+			if !inComposing {
+				inComposing = true
+				composingStart = adjusted.Timestamp
+			}
+			optimized = append(optimized, adjusted)
+
+		case "paused":
+			if inComposing {
+				segDur := adjusted.Timestamp - composingStart
+				if segDur > 0 {
+					localAccum += segDur
+				}
+				composingStart = adjusted.Timestamp
+			}
+			if localAccum >= pauseLimit {
+				microPause := s.hsemEngine.Math().UniformDuration(hsemDomain.ForcedMicroPauseMin, hsemDomain.ForcedMicroPauseMax)
+				optimized = append(optimized, adjusted)
+				extraShift += microPause
+				localAccum = 0
+				inComposing = false
+			}
+
+		default:
+			if inComposing {
+				segDur := adjusted.Timestamp - composingStart
+				if segDur > 0 {
+					localAccum += segDur
+				}
+				composingStart = adjusted.Timestamp
+			}
+			optimized = append(optimized, adjusted)
+		}
+	}
+
+	if continuousComposing != nil {
+		*continuousComposing = localAccum
+	}
+	return optimized
 }
 
 func (s *WhatsAppService) QueueMessage(ctx context.Context, payload domain.SendMessagePayload) error {
@@ -286,6 +388,14 @@ func (s *WhatsAppService) registerHandlers(client domain.WhatsAppClient, session
 		if evt, ok := rawEvt.(domain.LoggedOutEvent); ok {
 			s.handleLoggedOut(sessionID, evt)
 			return
+		}
+
+		if evt, ok := rawEvt.(domain.MessageEvent); ok && s.stateTracker != nil {
+			chatJID := evt.ChatJID
+			if chatJID == "" {
+				chatJID = evt.SenderJID
+			}
+			s.stateTracker.RecordInboundChatActivity(ctx, sessionID, chatJID)
 		}
 
 		if evt, ok := rawEvt.(domain.Event); ok {
@@ -528,6 +638,9 @@ func (s *WhatsAppService) GetStatus(sessionID string) (*domain.SessionStatus, er
 
 func (s *WhatsAppService) Logout(ctx context.Context, sessionID string) error {
 	s.clearQRState(sessionID)
+	if s.serializer != nil {
+		s.serializer.CancelSession(sessionID)
+	}
 
 	client, ok := s.clientRepo.GetClient(sessionID)
 	if !ok {
@@ -544,11 +657,17 @@ func (s *WhatsAppService) Logout(ctx context.Context, sessionID string) error {
 
 func (s *WhatsAppService) handleLoggedOut(sessionID string, evt domain.LoggedOutEvent) {
 	s.clearQRState(sessionID)
+	if s.serializer != nil {
+		s.serializer.CancelSession(sessionID)
+	}
 	s.clientRepo.RemoveClient(sessionID)
 	_ = s.repo.DeleteMapping(context.Background(), sessionID)
 }
 
 func (s *WhatsAppService) Shutdown() {
+	if s.serializer != nil {
+		s.serializer.Shutdown()
+	}
 	s.clientRepo.DisconnectAll()
 }
 
@@ -850,8 +969,6 @@ func (s *WhatsAppService) CheckNumbers(ctx context.Context, sessionID string, ph
 	return client.IsOnWhatsApp(ctx, phones)
 }
 
-// ResolveContact resolves a normalized phone number to its canonical WhatsApp JID
-// by querying IsOnWhatsApp in a single batch with Brazilian 9th-digit variations when applicable.
 func (s *WhatsAppService) ResolveContact(ctx context.Context, sessionID, phone string) (*domain.ResolveContactResult, error) {
 	client, ok := s.clientRepo.GetClient(sessionID)
 	if !ok || !client.IsLoggedIn() {
@@ -902,8 +1019,6 @@ func toResolveContactResult(r *domain.IsOnWhatsAppResult) *domain.ResolveContact
 	}
 }
 
-// buildPhoneVariations normalizes a phone number to international "+<digits>" format
-// and appends the Brazilian 9th-digit variation when applicable for mobile numbers.
 func buildPhoneVariations(phone string) []string {
 	digits := extractDigits(phone)
 	if digits == "" {
@@ -944,7 +1059,6 @@ func (s *WhatsAppService) GetUserInfo(ctx context.Context, sessionID, jid string
 	if info, exists := resMap[jid]; exists {
 		return &info, nil
 	}
-	// fallback search without server part if needed
 	for _, info := range resMap {
 		return &info, nil
 	}

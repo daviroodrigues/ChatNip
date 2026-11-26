@@ -43,7 +43,7 @@ O projeto foi desenhado com foco em previsibilidade operacional, segurança e is
 
 - **Perímetro Único (Single-Edge Nginx):** `chatnip-nginx` é o único contêiner com `ports:` mapeadas para o host; `chatnip-core`, `chatnip-backup` e serviços auxiliares operam em rede Docker isolada (`chatnip-network`).
 - **Isolamento de Egressão por Sessão:** Conexões com o WhatsApp exigem `proxy_url` explícita no login e suportam rotação e validação em tempo de execução (`PUT /api/v1/proxy`, `POST /api/v1/proxy/validate`).
-- **HSEM v3.1 (Bio-Emulação):** Máquina de estados de presença (`DORMANT` → `WARMING UP` → `ACTIVE FLOW` → `COOL DOWN`) e *Virtual Sub-Queues* (VSQ) por destinatário para reduzir risco de bloqueios. Veja a especificação em [`backend/docs/guides/hsem.md`](backend/docs/guides/hsem.md).
+- **HSEM v3.1 (Bio-Emulação):** Serialização por sessão (`SessionSerializer` + `SessionGate` com preempção de *fast-lane*), agrupamento de rajadas e simulação estocástica de leitura, digitação e presença por persona (`PADRAO`, `APRESSADO`, `METICULOSO`, `DISTRAIDO`). Veja a especificação em [`backend/docs/guides/hsem.md`](backend/docs/guides/hsem.md).
 - **Pipeline AMQP com Priorização e DLQ:** Filas separadas para baixa latência (`whatsapp_fast_lane`) e fluxo padrão (`whatsapp_standard_lane`), criação de grupos (`whatsapp_group_create`) e *Dead Letter Exchange* (`whatsapp_dlx`).
 - **Segurança & Criptografia:**
   - Separação entre chave administrativa mestre (`X-Internal-Key`) e chaves de clientes (`X-API-Key` no formato `cn_live_*`).

@@ -4,21 +4,29 @@ import (
 	hsemDomain "chatnip/internal/modules/hsem/domain"
 	whatsappDomain "chatnip/internal/modules/whatsapp/domain"
 	"context"
+	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 )
 
 type mockMessenger struct {
+	mu             sync.Mutex
 	lastAction     string
 	lastMessageID  string
 	lastText       string
 	lastReaction   string
 	lastMarkReadID string
 	availableState bool
+	presences      []string
 }
 
 func (m *mockMessenger) SendPresence(ctx context.Context, jid string, state string) error {
+	m.mu.Lock()
+	m.presences = append(m.presences, state)
+	m.mu.Unlock()
 	return nil
 }
 
@@ -92,7 +100,6 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 1. Test Edit Message
 	editPlan := hsemDomain.FingerprintPlan{
 		Steps: []hsemDomain.ActionStep{
 			{Type: hsemDomain.StepAction, Timestamp: 0, Metadata: "send_message"},
@@ -114,7 +121,6 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 		t.Errorf("edit failed to dispatch properly: %+v", mock)
 	}
 
-	// 2. Test Reaction Message
 	reactPayload := whatsappDomain.SendMessagePayload{
 		SessionID:   "sess_1",
 		RemoteJID:   "5511999999999@s.whatsapp.net",
@@ -130,7 +136,6 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 		t.Errorf("reaction failed to dispatch properly: %+v", mock)
 	}
 
-	// 3. Test Revoke Message
 	revokePayload := whatsappDomain.SendMessagePayload{
 		SessionID:   "sess_1",
 		RemoteJID:   "5511999999999@s.whatsapp.net",
@@ -145,7 +150,6 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 		t.Errorf("revoke failed to dispatch properly: %+v", mock)
 	}
 
-	// 4. Test MarkAsRead
 	readPlan := hsemDomain.FingerprintPlan{
 		Steps: []hsemDomain.ActionStep{
 			{Type: hsemDomain.StepAction, Timestamp: 0, Metadata: "mark_as_read"},
@@ -166,7 +170,6 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 		t.Errorf("expected lastMarkReadID to be received_msg_id, got %s", mock.lastMarkReadID)
 	}
 
-	// 5. Test Action Read/MarkRead explicit
 	explicitReadPayload := whatsappDomain.SendMessagePayload{
 		SessionID:   "sess_1",
 		RemoteJID:   "5511999999999@s.whatsapp.net",
@@ -179,5 +182,44 @@ func TestHSEMExecutor_Actions(t *testing.T) {
 	}
 	if id != "msg_to_read_explicit" || mock.lastMarkReadID != "msg_to_read_explicit" {
 		t.Errorf("expected lastMarkReadID to be msg_to_read_explicit, got %s", mock.lastMarkReadID)
+	}
+}
+
+func TestHSEMExecutor_CooperativeCancelSendsPaused(t *testing.T) {
+	logger := zerolog.Nop()
+	executor := NewHSEMExecutor(logger)
+	mock := &mockMessenger{}
+
+	plan := hsemDomain.FingerprintPlan{
+		TotalDuration: 5 * time.Second,
+		Steps: []hsemDomain.ActionStep{
+			{Type: hsemDomain.StepStateChange, Timestamp: 0, Metadata: "composing"},
+			{Type: hsemDomain.StepAction, Timestamp: 2 * time.Second, Metadata: "send_message"},
+		},
+	}
+	payload := whatsappDomain.SendMessagePayload{
+		SessionID: "sess_cancel",
+		RemoteJID: "5511999999999@s.whatsapp.net",
+		Text:      "Mensagem interrompida",
+	}
+
+	stepCtx, cancel := context.WithCancelCause(context.Background())
+	go func() {
+		time.Sleep(40 * time.Millisecond)
+		cancel(ErrPreempted)
+	}()
+
+	_, err := executor.ExecuteWithPreemption(context.Background(), stepCtx, mock, plan, payload, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled on preemption, got %v", err)
+	}
+	if mock.lastAction != "" {
+		t.Fatalf("expected send_message NOT to fire on cancelled step, got action %q", mock.lastAction)
+	}
+	mock.mu.Lock()
+	presences := append([]string(nil), mock.presences...)
+	mock.mu.Unlock()
+	if len(presences) < 2 || presences[0] != "composing" || presences[len(presences)-1] != "paused" {
+		t.Fatalf("expected composing followed by clean paused on cancel, got %v", presences)
 	}
 }

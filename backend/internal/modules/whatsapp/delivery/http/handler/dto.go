@@ -47,7 +47,7 @@ type SendMessageRequest struct {
 	CorrelationID     string    `json:"correlation_id"`
 	SessionID         string    `json:"session_id"`
 	RemoteJID         string    `json:"jid"`
-	TargetType        string    `json:"target_type,omitempty"` // "contact", "group", "status", "newsletter"
+	TargetType        string    `json:"target_type,omitempty"`
 	Message           string    `json:"message"`
 	MediaURL          string    `json:"media_url,omitempty"`
 	MediaType         MediaType `json:"media_type,omitempty"`
@@ -98,7 +98,7 @@ type ReactionMessageRequest struct {
 	RemoteJID     string `json:"jid"`
 	SenderJID     string `json:"sender_jid,omitempty"`
 	MessageID     string `json:"message_id"`
-	Reaction      string `json:"reaction"` // Emoji ou vazio para remover
+	Reaction      string `json:"reaction"`
 	IsGroup       bool   `json:"is_group,omitempty"`
 	IsPriority    bool   `json:"is_priority,omitempty"`
 }
@@ -161,7 +161,7 @@ type UpdateGroupParticipantsRequest struct {
 	SessionID    string   `json:"session_id"`
 	GroupJID     string   `json:"group_jid"`
 	Participants []string `json:"participants"`
-	Action       string   `json:"action"` // "add", "remove", "promote", "demote"
+	Action       string   `json:"action"`
 }
 
 type LeaveGroupRequest struct {

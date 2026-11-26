@@ -22,7 +22,6 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	store := auth.NewSQLStore(db)
 	ctx := context.Background()
 
-	// 1. Create Key
 	rawKey, key, err := store.Create(ctx, "Guara ERP Integration")
 	if err != nil {
 		t.Fatalf("failed to create api key: %v", err)
@@ -37,7 +36,6 @@ func TestAPIKeyLifecycle(t *testing.T) {
 		t.Fatalf("expected valid masked key, got %s", key.MaskedKey)
 	}
 
-	// 2. Validate Key
 	valid, err := store.Validate(ctx, rawKey)
 	if err != nil {
 		t.Fatalf("unexpected error validating key: %v", err)
@@ -46,7 +44,6 @@ func TestAPIKeyLifecycle(t *testing.T) {
 		t.Fatal("expected rawKey to be valid")
 	}
 
-	// 3. Validate Invalid Key
 	invalid, err := store.Validate(ctx, "cn_live_invalidkey123")
 	if err != nil {
 		t.Fatalf("unexpected error validating invalid key: %v", err)
@@ -55,7 +52,6 @@ func TestAPIKeyLifecycle(t *testing.T) {
 		t.Fatal("expected invalid key to return false")
 	}
 
-	// 4. List Keys
 	list, err := store.List(ctx)
 	if err != nil {
 		t.Fatalf("failed to list keys: %v", err)
@@ -70,12 +66,10 @@ func TestAPIKeyLifecycle(t *testing.T) {
 		t.Fatal("expected key to not be revoked")
 	}
 
-	// 5. Revoke Key
 	if err := store.Revoke(ctx, key.ID); err != nil {
 		t.Fatalf("failed to revoke key: %v", err)
 	}
 
-	// 6. Validate Revoked Key (must fail)
 	validAfterRevoke, err := store.Validate(ctx, rawKey)
 	if err != nil {
 		t.Fatalf("unexpected error validating revoked key: %v", err)

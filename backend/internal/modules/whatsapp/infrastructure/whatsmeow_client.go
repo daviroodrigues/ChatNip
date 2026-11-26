@@ -714,8 +714,6 @@ func (w *WhatsMeowAdapter) DownloadMediaToFile(ctx context.Context, desc domain.
 	return w.client.DownloadToFile(ctx, downloadable, destFile)
 }
 
-// extractSenderPhone returns the phone number digits from the sender's PN JID,
-// falling back to SenderAlt when the primary Sender uses LID addressing.
 func extractSenderPhone(sender, senderAlt types.JID) string {
 	if sender.Server == types.DefaultUserServer && sender.User != "" {
 		return sender.User
@@ -854,7 +852,5 @@ func buildContextInfo(quotedID, quotedParticipant string) *waE2E.ContextInfo {
 	return &waE2E.ContextInfo{
 		StanzaID:    proto.String(quotedID),
 		Participant: proto.String(quotedParticipant),
-		// Nota: Para um preview completo, precisaríamos do objeto da mensagem original,
-		// mas apenas ID e Participant já criam o link de resposta ("Reply").
 	}
 }

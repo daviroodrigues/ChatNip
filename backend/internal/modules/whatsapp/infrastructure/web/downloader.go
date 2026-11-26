@@ -29,8 +29,6 @@ func (d *HTTPFileDownloader) Download(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// DownloadToTempFile streams the response body directly to a temporary file on
-// disk so large files (e.g. 1 GB documents) never spike container RAM.
 func (d *HTTPFileDownloader) DownloadToTempFile(ctx context.Context, url string, tempDir string) (string, int64, string, error) {
 	if tempDir == "" {
 		tempDir = os.TempDir()

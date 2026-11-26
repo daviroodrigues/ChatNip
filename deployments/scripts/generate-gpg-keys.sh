@@ -1,14 +1,6 @@
 #!/bin/bash
 set -e
 
-# ==============================================================================
-# ChatNip - OpenGPG Key Generator
-# Generates an asymmetric keypair:
-#   - Public key is saved to ./keys/backup-public.asc (used by container to encrypt).
-#   - Private key is NEVER saved to disk on the server! It is output to terminal
-#     for the operator to save in a secure vault (KeePass, 1Password, Bitwarden, etc.)
-# ==============================================================================
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 KEYS_DIR="$REPO_ROOT/keys"
@@ -46,7 +38,6 @@ echo -e "  • Email:   ${BOLD}$KEY_EMAIL${NC}"
 echo -e "  • Tipo:    RSA 4096 bits (Assimétrica OpenGPG)"
 echo ""
 
-# Create temporary GNUPGHOME in RAM/temp that will be destroyed on exit
 TEMP_GPG_HOME=$(mktemp -d /tmp/chatnip-gen-gpg-XXXXXX)
 chmod 700 "$TEMP_GPG_HOME"
 
@@ -70,11 +61,9 @@ Expire-Date: 0
 %commit
 EOF
 
-# Export ONLY the public key to project directory
 GNUPGHOME="$TEMP_GPG_HOME" gpg --armor --export "$KEY_EMAIL" > "$KEYS_DIR/backup-public.asc"
 chmod 644 "$KEYS_DIR/backup-public.asc"
 
-# Capture private key block directly in memory (never written to project files)
 PRIVATE_KEY_BLOCK=$(GNUPGHOME="$TEMP_GPG_HOME" gpg --armor --export-secret-keys "$KEY_EMAIL")
 
 FINGERPRINT=$(GNUPGHOME="$TEMP_GPG_HOME" gpg --list-keys --with-colons "$KEY_EMAIL" | awk -F: '/^fpr/{print $10; exit}')

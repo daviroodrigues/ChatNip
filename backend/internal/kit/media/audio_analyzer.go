@@ -10,11 +10,20 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type AudioMetadata struct {
 	DurationSeconds uint32
 	Waveform        []byte
+}
+
+func ProbeMediaDuration(ctx context.Context, filePath string) (time.Duration, error) {
+	secs, err := getDurationWithFFprobe(ctx, filePath)
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(secs) * time.Second, nil
 }
 
 func AnalyzeAudio(ctx context.Context, mediaData []byte) (*AudioMetadata, error) {
@@ -33,7 +42,6 @@ func AnalyzeAudio(ctx context.Context, mediaData []byte) (*AudioMetadata, error)
 
 	duration, err := getDurationWithFFprobe(ctx, tmpFile.Name())
 	if err != nil {
-		// Logar erro se necessário, mas define fallback seguro
 		duration = 0
 	}
 
