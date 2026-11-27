@@ -7,13 +7,13 @@ import (
 
 func TestLoad_Success(t *testing.T) {
 	envs := map[string]string{
-		"WHATSAPP_GO_PORT":           "8080",
-		"WHATSAPP_GO_INTERNAL_KEY":   "test-internal-key",
-		"WHATSAPP_GO_DB_PATH":        "/tmp/test.db",
-		"WHATSAPP_GO_API_VERSION":    "v1",
-		"ENVIRONMENT":                "development",
-		"RABBITMQ_URL":               "amqp://guest:guest@localhost:5672/",
-		"WHATSAPP_GO_ENCRYPTION_KEY": "01234567890123456789012345678901",
+		"CHATNIP_PORT":           "8080",
+		"CHATNIP_INTERNAL_KEY":   "test-internal-key",
+		"CHATNIP_DB_PATH":        "/tmp/test.db",
+		"CHATNIP_API_VERSION":    "v1",
+		"ENVIRONMENT":            "development",
+		"RABBITMQ_URL":           "amqp://guest:guest@localhost:5672/",
+		"CHATNIP_ENCRYPTION_KEY": "01234567890123456789012345678901",
 	}
 
 	for k, v := range envs {

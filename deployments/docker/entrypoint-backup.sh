@@ -12,7 +12,7 @@ echo -e "${CYAN}${BOLD}       📦 ChatNip Backup Daemon (OpenGPG + GFS Strategy
 echo -e "${CYAN}================================================================${NC}"
 
 S3_BUCKET_NAME="$AWS_S3_BUCKET"
-S3_ENDPOINT="$AWS_S3_ENDPOINT_URL"
+S3_ENDPOINT="$AWS_ENDPOINT_URL"
 PUB_KEY_PATH="$BACKUP_GPG_PUBLIC_KEY_PATH"
 RET_DAILY="$BACKUP_RETENTION_DAILY"
 RET_WEEKLY="$BACKUP_RETENTION_WEEKLY"

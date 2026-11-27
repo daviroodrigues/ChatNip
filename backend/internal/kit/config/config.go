@@ -33,13 +33,13 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:               requireEnv("WHATSAPP_GO_PORT"),
-		InternalKey:        requireEnv("WHATSAPP_GO_INTERNAL_KEY"),
-		DBPath:             requireEnv("WHATSAPP_GO_DB_PATH"),
-		APIVersion:         requireEnv("WHATSAPP_GO_API_VERSION"),
+		Port:               requireEnv("CHATNIP_PORT"),
+		InternalKey:        requireEnv("CHATNIP_INTERNAL_KEY"),
+		DBPath:             requireEnv("CHATNIP_DB_PATH"),
+		APIVersion:         requireEnv("CHATNIP_API_VERSION"),
 		Environment:        requireEnv("ENVIRONMENT"),
 		RabbitURL:          requireEnv("RABBITMQ_URL"),
-		EncryptionKey:      requireEnv("WHATSAPP_GO_ENCRYPTION_KEY"),
+		EncryptionKey:      requireEnv("CHATNIP_ENCRYPTION_KEY"),
 		BackendURL:         os.Getenv("BACKEND_API_URL"),
 		BackendInternalKey: os.Getenv("BACKEND_INTERNAL_API_KEY"),
 		MediaTempDir:       mediaTempDir,

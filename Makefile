@@ -1,4 +1,4 @@
-APP_NAME := whatsapp-engine
+APP_NAME := chatnip
 BACKEND_DIR := backend
 CMD_PATH := cmd/api/main.go
 BUILD_DIR := bin
@@ -8,7 +8,10 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-DB_URL ?= postgres://$(WHATSAPP_GO_DB_USER):$(WHATSAPP_GO_DB_PASSWORD)@localhost:$(WHATSAPP_GO_DB_PORT)/$(WHATSAPP_GO_DB_NAME)?sslmode=disable
+RABBITMQ_URL ?= amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@$(RABBITMQ_HOST)/
+export RABBITMQ_URL
+
+DB_URL ?= sqlite3://$(CHATNIP_DB_PATH)
 
 .PHONY: help all build run test clean deps swagger migrate-up migrate-down migrate-create docker-build docker-run generate-keys backup backup-manager restore
 

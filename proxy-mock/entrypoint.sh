@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PROXY_USER="${PROXY_USER:-guara}"
+PROXY_USER="${PROXY_USER:-chatnip}"
 
 if [ -z "$PROXY_PASSWORD" ]; then
     PROXY_PASSWORD=$(openssl rand -hex 12)

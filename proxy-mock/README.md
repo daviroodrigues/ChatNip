@@ -1,137 +1,86 @@
 # Proxy Mock (Squid Proxy Autenticado)
 
-Serviço de proxy HTTP/HTTPS com autenticação básica (*Basic Auth*), projetado para simular provedores de proxy residenciais/datacenter (como Oxylabs, BrightData, etc.) no ambiente de desenvolvimento e testes do ecossistema **Guara ERP**.
+Serviço de proxy HTTP/HTTPS com autenticação básica (*Basic Auth*), projetado para simular provedores de proxy residenciais/datacenter no ambiente de desenvolvimento e testes do **ChatNip**.
 
 ---
 
 ## 1. Visão Geral e Funcionamento
 
-O `proxy-mock` executa uma instância do **Squid** configurada com:
+O `chatnip-squid-proxy-mock` executa uma instância do **Squid** isolada na rede interna Docker (`chatnip-network`, profile `dev`):
 - **Autenticação obrigatória:** Baseada no módulo `basic_ncsa_auth` com hashing Apache MD5 (`$apr1$`).
-- **Cache desabilitado:** Para simular com fidelidade requisições de saída diretas e sem interferência de cache.
-- **Portas duplas suportadas:**
-  - `3128`: Porta padrão do Squid (mapeada internamente na rede Docker).
-  - `3127`: Porta mapeada para o Host (`localhost:3127`) e também escutada internamente para compatibilidade com rotas legadas.
+- **Cache desabilitado:** Para simular requisições de saída diretas e sem interferência de cache.
+- **Porta interna:** `3128` (acessível pelos contêineres via alias `proxy-mock:3128`).
 
 ---
 
-## 2. Variáveis de Ambiente (.env)
+## 2. Variáveis de Ambiente (`.env`)
 
-As credenciais e portas são configuradas centralmente no arquivo `.env` na raiz do projeto:
+As credenciais são configuradas no arquivo `.env` na raiz do projeto e mapeadas no `compose.yml`:
 
-| Variável | Padrão | Descrição |
-| :--- | :--- | :--- |
-| `PROXY_USER` | `guara` | Usuário para autenticação básica no proxy |
-| `PROXY_PASSWORD` | *(dinâmico)* | Senha do proxy (gerada automaticamente se vazia/omitida) |
-| `PROXY_HOST_PORT` | `3127` | Porta exposta para a máquina host (`localhost`) |
-| `PROXY_PORT` | `3128` | Porta do Squid dentro do container e da rede Docker |
-| `WHATSAPP_GO_PROXY_URL` | *(composto)* | URL formatada para consumo de serviços dependentes |
+| Variável (`.env`) | Variável no contêiner | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `SQUID_PROXY_USER` | `PROXY_USER` | `chatnip` | Usuário para autenticação básica no proxy |
+| `SQUID_PROXY_PASS` | `PROXY_PASSWORD` | *(dinâmico)* | Senha do proxy (gerada automaticamente se vazia/omitida) |
 
 ### Exemplo no `.env`:
 ```env
-PROXY_USER=guara
-PROXY_PASSWORD=eee2a8f2ccaaed5a92dc3b82
-PROXY_HOST_PORT=3127
-PROXY_PORT=3128
-WHATSAPP_GO_PROXY_URL=http://guara:eee2a8f2ccaaed5a92dc3b82@proxy-mock:3128
+SQUID_PROXY_USER=chatnip
+SQUID_PROXY_PASS=chatnip
 ```
 
 ---
 
 ## 3. Geração Automática de Credenciais na Inicialização
 
-O container utiliza o script [`entrypoint.sh`](file:///home/daviroodrigues/workspace/guara_erp/proxy-mock/entrypoint.sh):
-1. **Verificação de Senha:** Caso `PROXY_PASSWORD` não seja definida no `.env` ou esteja vazia, o container gera automaticamente uma senha segura de 24 caracteres hexadecimais via `openssl rand -hex 12`.
-2. **Geração do Hash APR1:** A senha (fornecida ou gerada) é criptografada em tempo real com `openssl passwd -apr1` e gravada no formato htpasswd dentro da pasta de dados em `/etc/squid/data/passwords` (persistida no host em `proxy-mock/data/passwords`).
-3. **Log Visível:** Durante a inicialização, o container exibe as credenciais ativas e as URLs de conexão prontas para uso nos logs (`docker compose logs proxy-mock`).
+O contêiner utiliza o script [`entrypoint.sh`](entrypoint.sh):
+1. **Verificação de Senha:** Caso `PROXY_PASSWORD` não seja definida ou esteja vazia, gera automaticamente uma senha segura de 24 caracteres hexadecimais via `openssl rand -hex 12`.
+2. **Geração do Hash APR1:** A senha é criptografada com `openssl passwd -apr1` e gravada em `/etc/squid/data/passwords` (persistida em `proxy-mock/data/passwords`).
+3. **Log Visível:** Durante a inicialização, o contêiner exibe o usuário ativo e a URL de conexão nos logs (`docker compose --profile dev logs chatnip-squid-proxy-mock`).
 
 ---
 
-## 4. URLs de Conexão
+## 4. URL de Conexão (Rede Docker `chatnip-network`)
 
-O proxy pode ser consumido em dois contextos:
+Utilize o alias `proxy-mock` e a porta `3128` ao informar `proxy_url` no login de sessão do ChatNip:
 
-### A. De dentro da Rede Docker (`guara-network`)
-Utilize o hostname do serviço `proxy-mock` e a porta `3128` (ou `3127`):
 ```text
-http://<USUARIO>:<SENHA>@proxy-mock:3128
-```
-*Exemplo com valores atuais:*
-```text
-http://guara:eee2a8f2ccaaed5a92dc3b82@proxy-mock:3128
+http://<SQUID_PROXY_USER>:<SQUID_PROXY_PASS>@proxy-mock:3128
 ```
 
-### B. A partir do Host (sua máquina / localhost)
-Utilize `localhost` e a porta mapeada no host (`3127`):
+*Exemplo com os valores padrão de desenvolvimento:*
 ```text
-http://<USUARIO>:<SENHA>@localhost:3127
-```
-*Exemplo com valores atuais:*
-```text
-http://guara:eee2a8f2ccaaed5a92dc3b82@localhost:3127
+http://chatnip:chatnip@proxy-mock:3128
 ```
 
 ---
 
 ## 5. Como Iniciar e Gerenciar
 
-### Subir apenas o proxy-mock:
 ```bash
-docker compose up -d proxy-mock
-```
+# Subir o proxy mock (profile dev)
+docker compose --profile dev up -d chatnip-squid-proxy-mock
 
-### Visualizar logs e credenciais ativas:
-```bash
-docker compose logs -f proxy-mock
-```
+# Visualizar logs e credenciais ativas
+docker compose --profile dev logs -f chatnip-squid-proxy-mock
 
-### Reiniciar o proxy (após alterar senha no `.env`):
-```bash
-docker compose up -d --force-recreate proxy-mock
-```
+# Recriar após alterar credenciais no .env
+docker compose --profile dev up -d --force-recreate chatnip-squid-proxy-mock
 
-### Parar o serviço:
-```bash
-docker compose stop proxy-mock
+# Parar o serviço
+docker compose --profile dev stop chatnip-squid-proxy-mock
 ```
 
 ---
 
-## 6. Como Testar e Validar
-
-### 1. Teste de Sucesso (com autenticação)
-```bash
-curl -x "http://guara:eee2a8f2ccaaed5a92dc3b82@localhost:3127" https://api.ipify.org?format=json
-```
-*Resposta esperada: JSON com o seu IP público.*
-
-### 2. Teste de Autenticação Rejeitada (sem credenciais)
-```bash
-curl -I -x "http://localhost:3127" https://api.ipify.org
-```
-*Resposta esperada:*
-```text
-HTTP/1.1 407 Proxy Authentication Required
-Proxy-Authenticate: Basic realm="Proxy Mock Oxylabs"
-```
-
-### 3. Teste com Senha Incorreta
-```bash
-curl -I -x "http://guara:senha_errada@localhost:3127" https://api.ipify.org
-```
-*Resposta esperada: `HTTP/1.1 407 Proxy Authentication Required`.*
-
----
-
-## 7. Estrutura de Arquivos
+## 6. Estrutura de Arquivos
 
 ```text
 proxy-mock/
 ├── data/
 │   ├── .gitkeep        # Mantém a pasta no Git
 │   └── passwords       # Arquivo htpasswd gerenciado dinamicamente (ignorado no Git)
-├── entrypoint.sh       # Inicializador que lê variáveis do .env, gera senha se necessário e cria passwords
-├── squid.conf          # Configuração do Squid (portas, basic_ncsa_auth, cache off)
+├── entrypoint.sh       # Inicializador que gera o arquivo htpasswd a partir das env vars
+├── squid.conf          # Configuração do Squid (basic_ncsa_auth, cache off)
 ├── .gitignore          # Ignora o arquivo de senhas
 └── README.md           # Esta documentação
 ```

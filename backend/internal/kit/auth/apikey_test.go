@@ -22,15 +22,15 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	store := auth.NewSQLStore(db)
 	ctx := context.Background()
 
-	rawKey, key, err := store.Create(ctx, "Guara ERP Integration")
+	rawKey, key, err := store.Create(ctx, "ERP Integration")
 	if err != nil {
 		t.Fatalf("failed to create api key: %v", err)
 	}
 	if rawKey == "" {
 		t.Fatal("expected non-empty raw key")
 	}
-	if key.Name != "Guara ERP Integration" {
-		t.Fatalf("expected name to be 'Guara ERP Integration', got %s", key.Name)
+	if key.Name != "ERP Integration" {
+		t.Fatalf("expected name to be 'ERP Integration', got %s", key.Name)
 	}
 	if key.MaskedKey == "" || len(key.MaskedKey) < 10 {
 		t.Fatalf("expected valid masked key, got %s", key.MaskedKey)

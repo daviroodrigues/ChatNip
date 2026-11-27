@@ -146,14 +146,14 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Gere duas chaves hexadecimais de 32 caracteres para `WHATSAPP_GO_INTERNAL_KEY` e `WHATSAPP_GO_ENCRYPTION_KEY`:
+Gere duas chaves hexadecimais de 32 caracteres para `CHATNIP_INTERNAL_KEY` e `CHATNIP_ENCRYPTION_KEY`:
 
 ```bash
 openssl rand -hex 16
 openssl rand -hex 16
 ```
 
-Edite o `.env` preenchendo as chaves geradas, a URL do RabbitMQ (`RABBITMQ_URL`) e as credenciais do bucket S3/R2/MinIO caso utilize backup remoto.
+Edite o `.env` preenchendo as chaves geradas, as credenciais e host do RabbitMQ (`RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `RABBITMQ_HOST`) e as credenciais do bucket S3/R2/MinIO caso utilize backup remoto.
 
 ### 2. Gerar par de chaves OpenGPG (Backup)
 
@@ -195,12 +195,12 @@ Todas as variáveis essenciais do `chatnip-core` são obrigatórias no startup (
 | `ENVIRONMENT` | Sim | `development` (logs legíveis em debug) ou `production` (JSON) |
 | `TZ` | Não | Timezone dos contêineres (ex.: `America/Sao_Paulo`) |
 | `NGINX_PORT` | Sim | Porta exposta no host pelo Nginx (ex.: `80` ou `8085`) |
-| `WHATSAPP_GO_PORT` | Sim | Porta interna da API Go (padrão no Compose: `80`) |
-| `WHATSAPP_GO_API_VERSION` | Sim | Prefixo de versão da API (ex.: `v1`) |
-| `WHATSAPP_GO_INTERNAL_KEY` | Sim | Chave mestra administrativa (`X-Internal-Key`) |
-| `WHATSAPP_GO_ENCRYPTION_KEY` | Sim | Chave de exatamente 32 bytes para criptografia AES-256-GCM |
-| `WHATSAPP_GO_DB_PATH` | Sim | Caminho do arquivo SQLite dentro do contêiner (`/data/whatsapp.db`) |
-| `RABBITMQ_URL` | Sim | URI AMQP do broker RabbitMQ |
+| `CHATNIP_PORT` | Sim | Porta interna da API Go (padrão no Compose: `80`) |
+| `CHATNIP_API_VERSION` | Sim | Prefixo de versão da API (ex.: `v1`) |
+| `CHATNIP_INTERNAL_KEY` | Sim | Chave mestra administrativa (`X-Internal-Key`) |
+| `CHATNIP_ENCRYPTION_KEY` | Sim | Chave de exatamente 32 bytes para criptografia AES-256-GCM |
+| `CHATNIP_DB_PATH` | Sim | Caminho do arquivo SQLite dentro do contêiner (`/data/whatsapp.db`) |
+| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` / `RABBITMQ_HOST` | Sim | Credenciais e host:porta do broker RabbitMQ (o Compose monta `RABBITMQ_URL`) |
 | `BACKEND_API_URL` | Não | URL do backend consumidor para ingestão de mídia |
 | `BACKEND_INTERNAL_API_KEY` | Não | Chave interna para comunicação com o backend consumidor |
 | `MEDIA_TEMP_DIR` | Não | Diretório temporário para processamento de mídia |
@@ -376,7 +376,7 @@ make test
 # Regenerar documentação Swagger em backend/docs/
 make swagger
 
-# Compilar binário nativo em backend/bin/whatsapp-engine
+# Compilar binário nativo em backend/bin/chatnip
 make build
 
 # Executar API localmente (com .env configurado)

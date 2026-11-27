@@ -3,7 +3,9 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -16,28 +18,97 @@ type Config struct {
 	ExchangeType string
 }
 
+type amqpChannel interface {
+	IsClosed() bool
+	Close() error
+	PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	QueueDeclarePassive(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
+	QueueBind(name, key, exchange string, noWait bool, args amqp.Table) error
+	ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool, args amqp.Table) error
+	ExchangeDeclarePassive(name, kind string, durable, autoDelete, internal, noWait bool, args amqp.Table) error
+}
+
 type RabbitMQAdapter struct {
 	conn             *amqp.Connection
-	channel          *amqp.Channel
+	channel          amqpChannel
+	openChannel      func() (amqpChannel, error)
 	pubMu            sync.Mutex
 	consumersMu      sync.Mutex
 	consumerChannels []*amqp.Channel
 	cfg              Config
 }
 
+func isAMQPCode(err error, code int) bool {
+	var amqpErr *amqp.Error
+	if errors.As(err, &amqpErr) {
+		return amqpErr.Code == code
+	}
+	return false
+}
+
+func (r *RabbitMQAdapter) newChannel() (amqpChannel, error) {
+	if r.openChannel != nil {
+		return r.openChannel()
+	}
+	if r.conn == nil || r.conn.IsClosed() {
+		return nil, fmt.Errorf("rabbitmq connection is closed")
+	}
+	return r.conn.Channel()
+}
+
 func (r *RabbitMQAdapter) ensurePublishChannelLocked() error {
 	if r.channel != nil && !r.channel.IsClosed() {
 		return nil
 	}
-	if r.conn == nil || r.conn.IsClosed() {
-		return fmt.Errorf("rabbitmq connection is closed")
-	}
-	ch, err := r.conn.Channel()
+	ch, err := r.newChannel()
 	if err != nil {
 		return fmt.Errorf("failed to reopen publish channel: %w", err)
 	}
 	r.channel = ch
 	return nil
+}
+
+func (r *RabbitMQAdapter) probeQueueExists(name string) (bool, error) {
+	probeCh, err := r.newChannel()
+	if err != nil {
+		return false, fmt.Errorf("failed to open probe channel for queue %s: %w", name, err)
+	}
+	defer func() {
+		if !probeCh.IsClosed() {
+			_ = probeCh.Close()
+		}
+	}()
+
+	_, err = probeCh.QueueDeclarePassive(name, true, false, false, false, nil)
+	if err == nil {
+		return true, nil
+	}
+	if isAMQPCode(err, amqp.NotFound) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to inspect queue %s: %w", name, err)
+}
+
+func (r *RabbitMQAdapter) probeExchangeExists(name, kind string) (bool, error) {
+	probeCh, err := r.newChannel()
+	if err != nil {
+		return false, fmt.Errorf("failed to open probe channel for exchange %s: %w", name, err)
+	}
+	defer func() {
+		if !probeCh.IsClosed() {
+			_ = probeCh.Close()
+		}
+	}()
+
+	err = probeCh.ExchangeDeclarePassive(name, kind, true, false, false, false, nil)
+	if err == nil {
+		return true, nil
+	}
+	if isAMQPCode(err, amqp.NotFound) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to inspect exchange %s: %w", name, err)
 }
 
 func (r *RabbitMQAdapter) PublishWithHeaders(ctx context.Context, exchange, routingKey string, body []byte, headers amqp.Table) error {
@@ -84,21 +155,24 @@ func NewRabbitMQAdapter(cfg Config) (*RabbitMQAdapter, error) {
 
 	ch, err := conn.Channel()
 	if err != nil {
+		_ = conn.Close()
 		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
+	adapter := &RabbitMQAdapter{
+		conn:    conn,
+		channel: ch,
+		cfg:     cfg,
+	}
+
 	if cfg.ExchangeName != "" {
-		err = ch.ExchangeDeclare(cfg.ExchangeName, cfg.ExchangeType, true, false, false, false, nil)
-		if err != nil {
+		if err := adapter.SetupExchange(cfg.ExchangeName, cfg.ExchangeType); err != nil {
+			adapter.Close()
 			return nil, err
 		}
 	}
 
-	return &RabbitMQAdapter{
-		conn:    conn,
-		channel: ch,
-		cfg:     cfg,
-	}, nil
+	return adapter, nil
 }
 
 func (r *RabbitMQAdapter) Publish(ctx context.Context, routingKey string, payload interface{}) error {
@@ -114,12 +188,37 @@ func (r *RabbitMQAdapter) SetupQueue(name string, routingKey string, args amqp.T
 	r.pubMu.Lock()
 	defer r.pubMu.Unlock()
 
-	if err := r.ensurePublishChannelLocked(); err != nil {
+	exists, err := r.probeQueueExists(name)
+	if err != nil {
 		return err
 	}
 
-	_, err := r.channel.QueueDeclare(name, true, false, false, false, args)
-	if err != nil {
+	if !exists {
+		if err := r.ensurePublishChannelLocked(); err != nil {
+			return err
+		}
+
+		_, err = r.channel.QueueDeclare(name, true, false, false, false, args)
+		if err != nil {
+			if isAMQPCode(err, amqp.PreconditionFailed) {
+				// 406 closes the AMQP channel; reset it and reuse the queue if it already exists.
+				r.channel = nil
+				existsNow, probeErr := r.probeQueueExists(name)
+				if probeErr != nil || !existsNow {
+					return err
+				}
+				log.Printf("rabbitmq: queue %q already exists with different arguments; reusing existing queue", name)
+			} else {
+				return err
+			}
+		}
+	}
+
+	if routingKey == "" || r.cfg.ExchangeName == "" {
+		return nil
+	}
+
+	if err := r.ensurePublishChannelLocked(); err != nil {
 		return err
 	}
 
@@ -130,11 +229,33 @@ func (r *RabbitMQAdapter) SetupExchange(name string, kind string) error {
 	r.pubMu.Lock()
 	defer r.pubMu.Unlock()
 
+	exists, err := r.probeExchangeExists(name, kind)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
 	if err := r.ensurePublishChannelLocked(); err != nil {
 		return err
 	}
 
-	return r.channel.ExchangeDeclare(name, kind, true, false, false, false, nil)
+	err = r.channel.ExchangeDeclare(name, kind, true, false, false, false, nil)
+	if err != nil {
+		if isAMQPCode(err, amqp.PreconditionFailed) {
+			r.channel = nil
+			existsNow, probeErr := r.probeExchangeExists(name, kind)
+			if probeErr != nil || !existsNow {
+				return err
+			}
+			log.Printf("rabbitmq: exchange %q already exists with different settings; reusing existing exchange", name)
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (r *RabbitMQAdapter) Consume(queueName string) (<-chan amqp.Delivery, error) {
@@ -213,7 +334,7 @@ func (r *RabbitMQAdapter) ReconnectChannel() error {
 		_ = r.channel.Close()
 	}
 
-	ch, err := r.conn.Channel()
+	ch, err := r.newChannel()
 	if err != nil {
 		return fmt.Errorf("failed to reopen channel: %w", err)
 	}
